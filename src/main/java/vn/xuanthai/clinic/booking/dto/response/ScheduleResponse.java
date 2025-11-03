@@ -10,4 +10,5 @@ public class ScheduleResponse {
     private LocalDate date;
     private String timeSlot;
     private ScheduleStatus status;
+    private Long doctorId;
 }

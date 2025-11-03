@@ -5,6 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.xuanthai.clinic.booking.entity.Schedule;
+import vn.xuanthai.clinic.booking.enums.ScheduleStatus;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -16,4 +18,10 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     // Tìm lịch làm việc của một bác sĩ trong một khoảng thời gian
     List<Schedule> findByDoctorIdAndDateBetween(Long doctorId, LocalDate startDate, LocalDate endDate);
+
+    // Tìm tất cả lịch (cả đã đặt và còn trống) của bác sĩ theo ngày
+    List<Schedule> findByDoctorIdAndDate(Long doctorId, LocalDate date);
+
+    // Chỉ tìm các lịch CÒN TRỐNG của bác sĩ theo ngày
+    List<Schedule> findByDoctorIdAndDateAndStatus(Long doctorId, LocalDate date, ScheduleStatus status);
 }
