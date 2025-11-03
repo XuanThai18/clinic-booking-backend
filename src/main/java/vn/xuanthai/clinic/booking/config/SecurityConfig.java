@@ -39,7 +39,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/other-public-api/**") // Các API public
+                        .requestMatchers("/api/auth/**", "/other-public-api/**",
+                                "/api/public/**", "/api/admin/**") // Các API public
                         .permitAll()
                         .anyRequest() // Mọi request khác
                         .authenticated() // Đều cần phải xác thực
