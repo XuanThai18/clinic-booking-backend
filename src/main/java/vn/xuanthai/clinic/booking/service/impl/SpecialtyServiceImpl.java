@@ -1,4 +1,4 @@
-package vn.xuanthai.clinic.booking.service;
+package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

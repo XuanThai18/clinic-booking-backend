@@ -1,4 +1,4 @@
-package vn.xuanthai.clinic.booking.service;
+package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +14,7 @@ import vn.xuanthai.clinic.booking.exception.BadRequestException;
 import vn.xuanthai.clinic.booking.repository.PasswordHistoryRepository;
 import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
+import vn.xuanthai.clinic.booking.service.IUserService;
 
 import java.util.List;
 import java.util.Optional;

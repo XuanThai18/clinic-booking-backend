@@ -1,4 +1,4 @@
-package vn.xuanthai.clinic.booking.service;
+package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +17,7 @@ import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.security.JwtService;
 import vn.xuanthai.clinic.booking.security.UserDetailsImpl;
+import vn.xuanthai.clinic.booking.service.IAuthService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

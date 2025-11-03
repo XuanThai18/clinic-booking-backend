@@ -1,4 +1,4 @@
-package vn.xuanthai.clinic.booking.service;
+package vn.xuanthai.clinic.booking.service.impl;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

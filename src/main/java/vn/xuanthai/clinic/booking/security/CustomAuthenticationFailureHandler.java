@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.stereotype.Component;
 import vn.xuanthai.clinic.booking.entity.User;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
-import vn.xuanthai.clinic.booking.service.LoginAttemptService; // Sẽ tạo service này
+import vn.xuanthai.clinic.booking.service.impl.LoginAttemptService; // Sẽ tạo service này
 
 import java.io.IOException;
 import java.io.OutputStream;

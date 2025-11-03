@@ -1,4 +1,4 @@
-package vn.xuanthai.clinic.booking.service;
+package vn.xuanthai.clinic.booking.service.impl;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
