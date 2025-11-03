@@ -5,12 +5,15 @@ import java.math.BigDecimal;
 
 @Data
 public class DoctorResponse {
-    private Long id;
-    private String fullName; // Lấy từ User liên quan
-    private String email;    // Lấy từ User liên quan
+    private Long doctorId; // ID của hồ sơ bác sĩ
+    private Long userId; // ID của tài khoản user liên kết
+    private String fullName;
+    private String email;
     private String description;
     private String academicDegree;
     private BigDecimal price;
-    private String specialtyName; // Chỉ lấy tên chuyên khoa
-    private String clinicName;    // Chỉ lấy tên phòng khám
+
+    // Chúng ta sẽ trả về thông tin chi tiết của chuyên khoa và phòng khám
+    private SpecialtyResponse specialty;
+    private ClinicResponse clinic;
 }
