@@ -8,9 +8,12 @@ import vn.xuanthai.clinic.booking.entity.Specialty;
 import vn.xuanthai.clinic.booking.exception.BadRequestException;
 import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.SpecialtyRepository;
+import vn.xuanthai.clinic.booking.service.IFileService;
 import vn.xuanthai.clinic.booking.service.ISpecialtyService;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class SpecialtyServiceImpl implements ISpecialtyService {
 
     private final SpecialtyRepository specialtyRepository;
+    private final IFileService fileService;
 
     @Override
     public SpecialtyResponse createSpecialty(SpecialtyRequest request) {
@@ -25,12 +29,10 @@ public class SpecialtyServiceImpl implements ISpecialtyService {
         Specialty newSpecialty = new Specialty();
         newSpecialty.setName(request.getName());
         newSpecialty.setDescription(request.getDescription());
-        newSpecialty.setImageUrl(request.getImageUrl());
+        // Gán danh sách ảnh
+        newSpecialty.setImageUrls(request.getImageUrls());
 
-        // 2. Lưu vào CSDL
         Specialty savedSpecialty = specialtyRepository.save(newSpecialty);
-
-        // 3. Chuyển đổi Entity sang DTO Response để trả về
         return mapToResponse(savedSpecialty);
     }
 
@@ -52,10 +54,26 @@ public class SpecialtyServiceImpl implements ISpecialtyService {
         // 1. Tìm chuyên khoa hiện tại
         Specialty existingSpecialty = findSpecialtyById(specialtyId);
 
+        // xóa ảnh nếu bị gơx bỏ khi update
+        //  Lấy danh sách ảnh hiện tại trong DB
+        Set<String> currentImages = new HashSet<>(existingSpecialty.getImageUrls());
+
+        //  Lấy danh sách ảnh mới từ Request
+        Set<String> newImages = request.getImageUrls(); // Đây là danh sách cuối cùng user muốn giữ
+
+        //  Tìm những ảnh có trong 'current' nhưng KHÔNG có trong 'new'
+        // (Tức là những ảnh user đã bấm dấu X để xóa)
+        for (String oldUrl : currentImages) {
+            if (!newImages.contains(oldUrl)) {
+                // Ảnh này đã bị loại bỏ -> Xóa trên Cloudinary
+                fileService.deleteFile(oldUrl);
+            }
+        }
+
         // 2. Cập nhật thông tin từ request
         existingSpecialty.setName(request.getName());
         existingSpecialty.setDescription(request.getDescription());
-        existingSpecialty.setImageUrl(request.getImageUrl());
+        existingSpecialty.setImageUrls(request.getImageUrls());
 
         // 3. Lưu lại
         Specialty updatedSpecialty = specialtyRepository.save(existingSpecialty);
@@ -69,6 +87,12 @@ public class SpecialtyServiceImpl implements ISpecialtyService {
          if (!existingSpecialty.getDoctors().isEmpty()) {
             throw new BadRequestException("Không thể xóa chuyên khoa đã có bác sĩ.");
          }
+
+        if (existingSpecialty.getImageUrls() != null) {
+            for (String url : existingSpecialty.getImageUrls()) {
+                fileService.deleteFile(url);
+            }
+        }
 
         specialtyRepository.delete(existingSpecialty);
     }
@@ -88,7 +112,7 @@ public class SpecialtyServiceImpl implements ISpecialtyService {
         dto.setId(specialty.getId());
         dto.setName(specialty.getName());
         dto.setDescription(specialty.getDescription());
-        dto.setImageUrl(specialty.getImageUrl());
+        dto.setImageUrls(specialty.getImageUrls());
         return dto;
     }
 }

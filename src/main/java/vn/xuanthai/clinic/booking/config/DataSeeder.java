@@ -84,7 +84,7 @@ public class DataSeeder implements CommandLineRunner {
             superAdmin.setRoles(Set.of(superAdminRole));
 
             userRepository.save(superAdmin);
-            System.out.println("======> Created SUPER_ADMIN account with default password '123456'");
+            System.out.println("======> Created SUPER_ADMIN account with default password 'Xuanthai1811@'");
         }
     }
 

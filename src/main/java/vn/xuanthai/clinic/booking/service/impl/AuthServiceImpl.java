@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import vn.xuanthai.clinic.booking.dto.request.AuthRequest;
 import vn.xuanthai.clinic.booking.dto.request.RegisterRequest;
 import vn.xuanthai.clinic.booking.dto.response.AuthResponse;
+import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
 import vn.xuanthai.clinic.booking.exception.BadRequestException;
@@ -22,6 +23,7 @@ import vn.xuanthai.clinic.booking.service.IAuthService;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,12 +35,12 @@ public class AuthServiceImpl implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final LoginAttemptService loginAttemptService;
-    //private final CaptchaService captchaService;
+    private final CaptchaService captchaService;
 
     @Override
     public User register(RegisterRequest request) {
         // KIỂM TRA CAPTCHA
-        //captchaService.validateCaptcha(request.getCaptchaResponse());
+        captchaService.validateCaptcha(request.getCaptchaResponse());
 
         // 1. Kiểm tra xem email đã tồn tại chưa
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -67,7 +69,7 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public AuthResponse login(AuthRequest request) {
         // KIỂM TRA CAPTCHA
-        //captchaService.validateCaptcha(request.getCaptchaResponse());
+        captchaService.validateCaptcha(request.getCaptchaResponse());
 
         // KIỂM TRA TRẠNG THÁI KHÓA TRƯỚC KHI XÁC THỰC
         if (loginAttemptService.isBlocked(request.getEmail())) {
@@ -131,7 +133,26 @@ public class AuthServiceImpl implements IAuthService {
         // 3. Tạo JWT token
         var jwtToken = jwtService.generateToken(userDetails);
 
-        // 4. Trả về token cho client
-        return AuthResponse.builder().accessToken(jwtToken).build();
+        // 4. Ánh xạ User sang UserResponse (DTO)
+        UserResponse userDto = mapToUserResponse(user);
+
+        // 5. Trả về cả token và userDto
+        return AuthResponse.builder()
+                .accessToken(jwtToken)
+                .user(userDto) // <-- THÊM VÀO RESPONSE
+                .build();
+    }
+
+    private UserResponse mapToUserResponse(User user) {
+        UserResponse dto = new UserResponse();
+        dto.setId(user.getId());
+        dto.setEmail(user.getEmail());
+        dto.setFullName(user.getFullName());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setAddress(user.getAddress());
+        dto.setActive(user.isActive());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
+        return dto;
     }
 }

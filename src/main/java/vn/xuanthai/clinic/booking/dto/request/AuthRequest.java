@@ -14,6 +14,6 @@ public class AuthRequest {
     @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
 
-//    @NotEmpty(message = "Mã CAPTCHA không được để trống")
-//    private String captchaResponse;
+    @NotEmpty(message = "Mã CAPTCHA không được để trống")
+    private String captchaResponse;
 }

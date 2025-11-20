@@ -25,8 +25,13 @@ public class Specialty {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @ElementCollection(fetch = FetchType.EAGER) // Load ảnh luôn khi lấy chuyên khoa
+    @CollectionTable(
+            name = "specialty_images", // Tên bảng phụ sẽ được tự động tạo
+            joinColumns = @JoinColumn(name = "specialty_id")
+    )
+    @Column(name = "image_url") // Tên cột trong bảng phụ
+    private Set<String> imageUrls = new HashSet<>();
 
     @OneToMany(mappedBy = "specialty", fetch = FetchType.LAZY)
     @JsonManagedReference("specialty-doctors")

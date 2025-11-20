@@ -3,6 +3,8 @@ package vn.xuanthai.clinic.booking.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
 public class SpecialtyRequest {
 
@@ -11,5 +13,5 @@ public class SpecialtyRequest {
 
     // Các trường này có thể là tùy chọn (nullable)
     private String description;
-    private String imageUrl;
+    private Set<String> imageUrls;
 }

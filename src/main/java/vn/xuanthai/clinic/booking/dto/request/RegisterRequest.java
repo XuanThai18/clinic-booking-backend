@@ -27,6 +27,6 @@ public class RegisterRequest {
     @NotBlank(message = "Địa chỉ không được để trống")
     private String address;
 
-//    @NotEmpty(message = "Mã CAPTCHA không được để trống")
-//    private String captchaResponse;
+    @NotEmpty(message = "Mã CAPTCHA không được để trống")
+    private String captchaResponse;
 }

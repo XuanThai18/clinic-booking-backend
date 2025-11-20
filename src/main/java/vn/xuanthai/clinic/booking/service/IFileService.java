@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface IFileService {
     List<String> uploadFiles(MultipartFile[] files);
+    void deleteFile(String fileUrl);
 }
