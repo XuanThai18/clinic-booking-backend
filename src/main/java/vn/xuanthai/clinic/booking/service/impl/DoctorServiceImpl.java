@@ -52,6 +52,11 @@ public class DoctorServiceImpl implements IDoctorService {
         newDoctor.setAcademicDegree(request.getAcademicDegree());
         newDoctor.setPrice(request.getPrice());
 
+        // --- CẬP NHẬT PHẦN ẢNH ---
+        newDoctor.setImage(request.getImage());             // Lưu Avatar (String)
+        newDoctor.setOtherImages(request.getOtherImages()); // Lưu danh sách ảnh bằng cấp (Set<String>)
+        // --------------------------
+
         // 3. Lưu vào CSDL
         Doctor savedDoctor = doctorRepository.save(newDoctor);
 
@@ -62,7 +67,7 @@ public class DoctorServiceImpl implements IDoctorService {
     @Override
     public DoctorResponse getDoctorById(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Bác sĩ với ID:" + doctorId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Bác sĩ với ID: " + doctorId));
         return mapToDoctorResponse(doctor);
     }
 
@@ -75,7 +80,7 @@ public class DoctorServiceImpl implements IDoctorService {
 
     @Override
     public List<DoctorResponse> findDoctorsBySpecialty(Long specialtyId) {
-        return doctorRepository.findBySpecialtyId(specialtyId).stream() // Giả sử em có phương thức này
+        return doctorRepository.findBySpecialtyId(specialtyId).stream()
                 .map(this::mapToDoctorResponse)
                 .collect(Collectors.toList());
     }
@@ -91,20 +96,32 @@ public class DoctorServiceImpl implements IDoctorService {
         dto.setAcademicDegree(doctor.getAcademicDegree());
         dto.setPrice(doctor.getPrice());
 
-        // Ánh xạ thông tin chuyên khoa
+        // --- CẬP NHẬT PHẦN ẢNH BÁC SĨ ---
+        dto.setImage(doctor.getImage());             // Trả về Avatar
+        dto.setOtherImages(doctor.getOtherImages()); // Trả về danh sách ảnh khác
+        // --------------------------------
+
+        // Ánh xạ thông tin chuyên khoa (Cập nhật logic ảnh)
         if (doctor.getSpecialty() != null) {
             SpecialtyResponse specialtyDto = new SpecialtyResponse();
             specialtyDto.setId(doctor.getSpecialty().getId());
             specialtyDto.setName(doctor.getSpecialty().getName());
+            specialtyDto.setDescription(doctor.getSpecialty().getDescription());
+            // Lưu ý: Specialty giờ dùng imageUrls (Set), không phải imageUrl (String)
+            specialtyDto.setImageUrls(doctor.getSpecialty().getImageUrls());
             dto.setSpecialty(specialtyDto);
         }
 
-        // Ánh xạ thông tin phòng khám
+        // Ánh xạ thông tin phòng khám (Cập nhật logic ảnh)
         if (doctor.getClinic() != null) {
             ClinicResponse clinicDto = new ClinicResponse();
             clinicDto.setId(doctor.getClinic().getId());
             clinicDto.setName(doctor.getClinic().getName());
             clinicDto.setAddress(doctor.getClinic().getAddress());
+            clinicDto.setPhoneNumber(doctor.getClinic().getPhoneNumber());
+            clinicDto.setDescription(doctor.getClinic().getDescription());
+            // Lưu ý: Clinic giờ dùng imageUrls (Set)
+            clinicDto.setImageUrls(doctor.getClinic().getImageUrls());
             dto.setClinic(clinicDto);
         }
 

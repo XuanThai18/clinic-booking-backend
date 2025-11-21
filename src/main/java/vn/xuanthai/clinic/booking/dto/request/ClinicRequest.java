@@ -3,6 +3,8 @@ package vn.xuanthai.clinic.booking.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
 public class ClinicRequest {
 
@@ -15,5 +17,5 @@ public class ClinicRequest {
     // Các trường này có thể là tùy chọn (nullable)
     private String phoneNumber;
     private String description;
-    private String imageUrl; // Sẽ nhận URL từ API upload file
+    private Set<String> imageUrls;
 }

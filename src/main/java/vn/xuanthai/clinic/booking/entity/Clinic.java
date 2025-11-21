@@ -30,8 +30,13 @@ import java.util.Set;
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "clinic_images", // Tên bảng phụ trong CSDL
+            joinColumns = @JoinColumn(name = "clinic_id")
+    )
     @Column(name = "image_url")
-    private String imageUrl;
+    private Set<String> imageUrls = new HashSet<>();
 
     @OneToMany(mappedBy = "clinic", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonManagedReference("clinic-doctors") // Thêm để xử lý lỗi lặp vô hạn khi chuyển sang JSON

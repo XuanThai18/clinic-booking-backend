@@ -2,6 +2,8 @@ package vn.xuanthai.clinic.booking.dto.response;
 
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
 public class ClinicResponse {
     private Long id;
@@ -9,7 +11,7 @@ public class ClinicResponse {
     private String address;
     private String phoneNumber;
     private String description;
-    private String imageUrl;
+    private Set<String> imageUrls;
 
     // Lưu ý: Chúng ta không trả về Set<Doctor> ở đây
     // để tránh lỗi lặp JSON và giữ cho DTO này gọn nhẹ.

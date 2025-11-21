@@ -2,6 +2,7 @@ package vn.xuanthai.clinic.booking.dto.response;
 
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.Set;
 
 @Data
 public class DoctorResponse {
@@ -12,6 +13,8 @@ public class DoctorResponse {
     private String description;
     private String academicDegree;
     private BigDecimal price;
+    private String image; // Avatar
+    private Set<String> otherImages; // Ảnh bằng cấp/chứng chỉ
 
     // Chúng ta sẽ trả về thông tin chi tiết của chuyên khoa và phòng khám
     private SpecialtyResponse specialty;

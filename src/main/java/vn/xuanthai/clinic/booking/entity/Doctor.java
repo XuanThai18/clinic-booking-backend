@@ -28,6 +28,21 @@ public class Doctor {
     @Column(name = "price", precision = 12, scale = 2)
     private BigDecimal price;
 
+    // 1. Ảnh đại diện (Avatar) - Giữ nguyên cái này, KHÔNG XÓA
+    // Dùng để hiện ở card, danh sách, avatar nhỏ...
+    @Column(name = "image")
+    private String image;
+
+    // 2. Ảnh bằng cấp, chứng chỉ, hoạt động (Thêm mới)
+    // Dùng để hiện trong trang chi tiết (Doctor Detail)
+    @ElementCollection(fetch = FetchType.LAZY) // Nên để LAZY vì list này chỉ cần khi xem chi tiết
+    @CollectionTable(
+            name = "doctor_images", // Bảng phụ
+            joinColumns = @JoinColumn(name = "doctor_id")
+    )
+    @Column(name = "image_url")
+    private Set<String> otherImages = new HashSet<>();
+
     // Mối quan hệ 1-1 với User
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)

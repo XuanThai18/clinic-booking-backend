@@ -9,8 +9,11 @@ import vn.xuanthai.clinic.booking.exception.BadRequestException;
 import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.ClinicRepository;
 import vn.xuanthai.clinic.booking.service.IClinicService;
+import vn.xuanthai.clinic.booking.service.IFileService;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,20 +21,20 @@ import java.util.stream.Collectors;
 public class ClinicServiceImpl implements IClinicService {
 
     private final ClinicRepository clinicRepository;
+    private final IFileService fileService;
 
     @Override
     public ClinicResponse createClinic(ClinicRequest request) {
-        // Ánh xạ từ DTO Request sang Entity
         Clinic newClinic = new Clinic();
         newClinic.setName(request.getName());
         newClinic.setAddress(request.getAddress());
         newClinic.setPhoneNumber(request.getPhoneNumber());
         newClinic.setDescription(request.getDescription());
-        newClinic.setImageUrl(request.getImageUrl());
+
+        // 3. Gán danh sách ảnh
+        newClinic.setImageUrls(request.getImageUrls());
 
         Clinic savedClinic = clinicRepository.save(newClinic);
-
-        // Ánh xạ từ Entity sang DTO Response
         return mapToResponse(savedClinic);
     }
 
@@ -52,12 +55,25 @@ public class ClinicServiceImpl implements IClinicService {
     public ClinicResponse updateClinic(Long clinicId, ClinicRequest request) {
         Clinic existingClinic = findClinicById(clinicId);
 
-        // Cập nhật các trường
+        // --- 4. LOGIC XÓA ẢNH RÁC TRÊN CLOUDINARY ---
+        Set<String> oldImages = new HashSet<>(existingClinic.getImageUrls());
+        Set<String> newImages = request.getImageUrls();
+
+        // Ảnh nào có trong cũ mà không có trong mới -> Xóa
+        for (String oldUrl : oldImages) {
+            if (newImages == null || !newImages.contains(oldUrl)) {
+                fileService.deleteFile(oldUrl);
+            }
+        }
+        // ----------------------------------------------
+
         existingClinic.setName(request.getName());
         existingClinic.setAddress(request.getAddress());
         existingClinic.setPhoneNumber(request.getPhoneNumber());
         existingClinic.setDescription(request.getDescription());
-        existingClinic.setImageUrl(request.getImageUrl());
+
+        // Cập nhật danh sách ảnh mới
+        existingClinic.setImageUrls(request.getImageUrls());
 
         Clinic updatedClinic = clinicRepository.save(existingClinic);
         return mapToResponse(updatedClinic);
@@ -67,9 +83,15 @@ public class ClinicServiceImpl implements IClinicService {
     public void deleteClinic(Long clinicId) {
         Clinic existingClinic = findClinicById(clinicId);
 
-        // Kiểm tra logic nghiệp vụ: Không cho xóa nếu vẫn còn bác sĩ
         if (existingClinic.getDoctors() != null && !existingClinic.getDoctors().isEmpty()) {
             throw new BadRequestException("Không thể xóa phòng khám đang có bác sĩ làm việc.");
+        }
+
+        // --- 5. XÓA TẤT CẢ ẢNH TRÊN CLOUDINARY ---
+        if (existingClinic.getImageUrls() != null) {
+            for (String url : existingClinic.getImageUrls()) {
+                fileService.deleteFile(url);
+            }
         }
 
         clinicRepository.delete(existingClinic);
@@ -77,14 +99,12 @@ public class ClinicServiceImpl implements IClinicService {
 
     // --- Phương thức trợ giúp ---
 
-    // Tìm phòng khám hoặc ném lỗi 404
     private Clinic findClinicById(Long clinicId) {
         return clinicRepository.findById(clinicId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy phòng khám với ID: " + clinicId));
     }
 
-    // Ánh xạ từ Entity sang DTO Response
     private ClinicResponse mapToResponse(Clinic clinic) {
         ClinicResponse dto = new ClinicResponse();
         dto.setId(clinic.getId());
@@ -92,7 +112,10 @@ public class ClinicServiceImpl implements IClinicService {
         dto.setAddress(clinic.getAddress());
         dto.setPhoneNumber(clinic.getPhoneNumber());
         dto.setDescription(clinic.getDescription());
-        dto.setImageUrl(clinic.getImageUrl());
+
+        // 6. Map danh sách ảnh
+        dto.setImageUrls(clinic.getImageUrls());
+
         return dto;
     }
 }

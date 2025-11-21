@@ -3,6 +3,7 @@ package vn.xuanthai.clinic.booking.dto.request;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.Set;
 
 @Data
 public class DoctorCreateRequest {
@@ -19,4 +20,6 @@ public class DoctorCreateRequest {
     private String description;
     private String academicDegree;
     private BigDecimal price;
+    private String image; // Avatar
+    private Set<String> otherImages; // Ảnh bằng cấp/chứng chỉ
 }
