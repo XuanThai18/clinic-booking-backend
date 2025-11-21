@@ -16,5 +16,6 @@ public interface IDoctorService {
     // Nâng cao: Tìm bác sĩ theo chuyên khoa
     List<DoctorResponse> findDoctorsBySpecialty(Long specialtyId);
 
-    // (Em có thể tự viết thêm hàm update và delete)
+    DoctorResponse updateDoctorProfile(Long doctorId, DoctorCreateRequest request);
+    void deleteDoctor(Long doctorId);
 }

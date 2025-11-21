@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.xuanthai.clinic.booking.dto.request.CreateUserRequest;
+import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.entity.PasswordHistory;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
@@ -105,5 +106,33 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public List<UserResponse> getAllUsers() {
+        // 1. Lấy tất cả user từ DB
+        List<User> users = userRepository.findAll();
+
+        // 2. Chuyển đổi (Map) từng User entity sang UserResponse DTO
+        return users.stream()
+                .map(this::mapToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    // --- HÀM TRỢ GIÚP (Copy từ Controller vào đây để dùng chung) ---
+    private UserResponse mapToUserResponse(User user) {
+        UserResponse dto = new UserResponse();
+        dto.setId(user.getId());
+        dto.setEmail(user.getEmail());
+        dto.setFullName(user.getFullName());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setAddress(user.getAddress());
+        dto.setActive(user.isActive());
+        dto.setCreatedAt(user.getCreatedAt());
+        // Lấy danh sách tên các role
+        dto.setRoles(user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet()));
+        return dto;
     }
 }

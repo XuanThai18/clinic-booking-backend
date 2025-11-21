@@ -5,16 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.CreateUserRequest;
 import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
 import vn.xuanthai.clinic.booking.service.IUserService;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
@@ -35,6 +33,13 @@ public class AdminController {
 
         // 3. Trả về DTO trong body của response
         return ResponseEntity.status(HttpStatus.CREATED).body(userResponseDto);
+    }
+
+    @GetMapping("/users")
+    // Chỉ Admin hoặc Super Admin mới được xem danh sách user
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     // Phương thức trợ giúp để thực hiện việc ánh xạ

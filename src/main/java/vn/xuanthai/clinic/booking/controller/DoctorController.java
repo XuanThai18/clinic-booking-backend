@@ -44,4 +44,20 @@ public class DoctorController {
     public ResponseEntity<List<DoctorResponse>> getDoctorsBySpecialty(@PathVariable Long id) {
         return ResponseEntity.ok(doctorService.findDoctorsBySpecialty(id));
     }
+
+    @PutMapping("/admin/doctors/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<DoctorResponse> updateDoctorProfile(
+            @PathVariable Long id,
+            @Valid @RequestBody DoctorCreateRequest request) {
+
+        return ResponseEntity.ok(doctorService.updateDoctorProfile(id, request));
+    }
+
+    @DeleteMapping("/admin/doctors/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> deleteDoctor(@PathVariable Long id) {
+        doctorService.deleteDoctor(id);
+        return ResponseEntity.noContent().build();
+    }
 }
