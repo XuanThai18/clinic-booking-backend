@@ -51,6 +51,8 @@ public class UserServiceImpl implements IUserService {
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         newUser.setPhoneNumber(request.getPhoneNumber());
         newUser.setAddress(request.getAddress());
+        newUser.setGender(request.getGender());     // Lưu giới tính
+        newUser.setBirthday(request.getBirthday()); // Lưu ngày sinh
         newUser.setActive(true);
 
         // 4. Gán các vai trò đã tìm thấy

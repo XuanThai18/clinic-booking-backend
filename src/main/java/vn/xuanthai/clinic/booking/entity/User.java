@@ -9,7 +9,9 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import vn.xuanthai.clinic.booking.config.StringCryptoConverter;
+import vn.xuanthai.clinic.booking.enums.Gender;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +45,13 @@ public class User {
     @Column(name = "address", columnDefinition = "TEXT")
     @Convert(converter = StringCryptoConverter.class)
     private String address;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 10)
+    private Gender gender;
+
+    @Column(name = "birthday")
+    private LocalDate birthday;
 
     @Column(name = "is_active", nullable = false)
     public boolean isActive = true;

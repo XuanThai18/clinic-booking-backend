@@ -2,7 +2,9 @@ package vn.xuanthai.clinic.booking.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import vn.xuanthai.clinic.booking.enums.Gender;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
@@ -27,6 +29,9 @@ public class CreateUserRequest {
     private String phoneNumber;
 
     private String address;
+
+    private Gender gender;
+    private LocalDate birthday;
 
     // Đây là phần quan trọng nhất: Admin sẽ gửi lên một danh sách TÊN của các role
     @NotEmpty(message = "Người dùng phải có ít nhất một vai trò")

@@ -37,17 +37,28 @@ public class DoctorServiceImpl implements IDoctorService {
     @Override
     @Transactional // Đảm bảo tất cả cùng thành công hoặc thất bại
     public DoctorResponse createDoctorProfile(DoctorCreateRequest request) {
-        // 1. Tìm các đối tượng liên quan
+        // 1. Tìm User
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + request.getUserId()));
 
+        // --- BƯỚC MỚI: CẬP NHẬT THÔNG TIN CÁ NHÂN VÀO USER ---
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+        if (request.getBirthday() != null) {
+            user.setBirthday(request.getBirthday());
+        }
+        // Hibernate sẽ tự động lưu thay đổi của user khi transaction kết thúc
+        // -----------------------------------------------------
+
+        // 2. Tìm Chuyên khoa và Phòng khám
         Specialty specialty = specialtyRepository.findById(request.getSpecialtyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Chuyên khoa với ID: " + request.getSpecialtyId()));
 
         Clinic clinic = clinicRepository.findById(request.getClinicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phòng khám với ID: " + request.getClinicId()));
 
-        // 2. Tạo Entity Doctor mới
+        // 3. Tạo Entity Doctor mới
         Doctor newDoctor = new Doctor();
         newDoctor.setUser(user);
         newDoctor.setSpecialty(specialty);
@@ -56,15 +67,14 @@ public class DoctorServiceImpl implements IDoctorService {
         newDoctor.setAcademicDegree(request.getAcademicDegree());
         newDoctor.setPrice(request.getPrice());
 
-        // --- CẬP NHẬT PHẦN ẢNH ---
-        newDoctor.setImage(request.getImage());             // Lưu Avatar (String)
-        newDoctor.setOtherImages(request.getOtherImages()); // Lưu danh sách ảnh bằng cấp (Set<String>)
-        // --------------------------
+        // Lưu ảnh
+        newDoctor.setImage(request.getImage());             // Lưu Avatar
+        newDoctor.setOtherImages(request.getOtherImages()); // Lưu danh sách ảnh chứng chỉ
 
-        // 3. Lưu vào CSDL
+        // 4. Lưu vào CSDL
         Doctor savedDoctor = doctorRepository.save(newDoctor);
 
-        // 4. Ánh xạ sang DTO để trả về
+        // 5. Ánh xạ sang DTO để trả về
         return mapToDoctorResponse(savedDoctor);
     }
 
@@ -96,12 +106,17 @@ public class DoctorServiceImpl implements IDoctorService {
         Doctor existingDoctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bác sĩ với ID: " + doctorId));
 
-        // 2. Cập nhật thông tin cơ bản
+        // 2. Cập nhật thông tin cá nhân vào User (Nếu có thay đổi)
+        User user = existingDoctor.getUser();
+        if (request.getGender() != null) user.setGender(request.getGender());
+        if (request.getBirthday() != null) user.setBirthday(request.getBirthday());
+
+        // 3. Cập nhật thông tin cơ bản bác sĩ
         existingDoctor.setDescription(request.getDescription());
         existingDoctor.setAcademicDegree(request.getAcademicDegree());
         existingDoctor.setPrice(request.getPrice());
 
-        // 3. Cập nhật các mối quan hệ (nếu thay đổi)
+        // 4. Cập nhật quan hệ (nếu thay đổi)
         if (!existingDoctor.getSpecialty().getId().equals(request.getSpecialtyId())) {
             Specialty newSpecialty = specialtyRepository.findById(request.getSpecialtyId())
                     .orElseThrow(() -> new ResourceNotFoundException("Chuyên khoa không tồn tại"));
@@ -114,30 +129,30 @@ public class DoctorServiceImpl implements IDoctorService {
             existingDoctor.setClinic(newClinic);
         }
 
-        // (User thường không cho đổi, nên ta bỏ qua hoặc kiểm tra nếu cần)
-
-        // 4. Xử lý Avatar (Xóa ảnh cũ nếu đổi ảnh mới)
+        // 5. Xử lý Avatar (Xóa ảnh cũ nếu đổi ảnh mới)
         String oldAvatar = existingDoctor.getImage();
         String newAvatar = request.getImage();
-        if (oldAvatar != null && !oldAvatar.equals(newAvatar)) {
+        // Nếu ảnh cũ khác null VÀ (ảnh mới khác null và khác ảnh cũ)
+        if (oldAvatar != null && newAvatar != null && !oldAvatar.equals(newAvatar)) {
             fileService.deleteFile(oldAvatar); // Xóa trên Cloudinary
         }
         existingDoctor.setImage(newAvatar);
 
-        // 5. Xử lý Ảnh Chứng chỉ (Xóa ảnh rác)
+        // 6. Xử lý Ảnh Chứng chỉ (Xóa ảnh rác)
         Set<String> oldImages = new HashSet<>(existingDoctor.getOtherImages());
         Set<String> newImages = request.getOtherImages();
 
-        if (oldImages != null) {
+        if (oldImages != null && newImages != null) {
             for (String oldUrl : oldImages) {
-                if (newImages == null || !newImages.contains(oldUrl)) {
-                    fileService.deleteFile(oldUrl); // Xóa những ảnh không còn trong danh sách mới
+                // Nếu ảnh cũ không còn nằm trong danh sách mới -> Xóa
+                if (!newImages.contains(oldUrl)) {
+                    fileService.deleteFile(oldUrl);
                 }
             }
         }
         existingDoctor.setOtherImages(newImages);
 
-        // 6. Lưu và trả về
+        // 7. Lưu và trả về
         Doctor updatedDoctor = doctorRepository.save(existingDoctor);
         return mapToDoctorResponse(updatedDoctor);
     }
@@ -169,29 +184,36 @@ public class DoctorServiceImpl implements IDoctorService {
         DoctorResponse dto = new DoctorResponse();
         dto.setDoctorId(doctor.getId());
         dto.setUserId(doctor.getUser().getId());
+
+        // Thông tin từ User
         dto.setFullName(doctor.getUser().getFullName());
         dto.setEmail(doctor.getUser().getEmail());
+        dto.setPhoneNumber(doctor.getUser().getPhoneNumber());
+
+        // --- MAP THÊM 2 TRƯỜNG NÀY TỪ USER ---
+        dto.setGender(doctor.getUser().getGender());
+        dto.setBirthday(doctor.getUser().getBirthday());
+        // -------------------------------------
+
         dto.setDescription(doctor.getDescription());
         dto.setAcademicDegree(doctor.getAcademicDegree());
         dto.setPrice(doctor.getPrice());
 
-        // --- CẬP NHẬT PHẦN ẢNH BÁC SĨ ---
-        dto.setImage(doctor.getImage());             // Trả về Avatar
-        dto.setOtherImages(doctor.getOtherImages()); // Trả về danh sách ảnh khác
-        // --------------------------------
+        // Ảnh
+        dto.setImage(doctor.getImage());
+        dto.setOtherImages(doctor.getOtherImages());
 
-        // Ánh xạ thông tin chuyên khoa (Cập nhật logic ảnh)
+        // Ánh xạ thông tin chuyên khoa
         if (doctor.getSpecialty() != null) {
             SpecialtyResponse specialtyDto = new SpecialtyResponse();
             specialtyDto.setId(doctor.getSpecialty().getId());
             specialtyDto.setName(doctor.getSpecialty().getName());
             specialtyDto.setDescription(doctor.getSpecialty().getDescription());
-            // Lưu ý: Specialty giờ dùng imageUrls (Set), không phải imageUrl (String)
             specialtyDto.setImageUrls(doctor.getSpecialty().getImageUrls());
             dto.setSpecialty(specialtyDto);
         }
 
-        // Ánh xạ thông tin phòng khám (Cập nhật logic ảnh)
+        // Ánh xạ thông tin phòng khám
         if (doctor.getClinic() != null) {
             ClinicResponse clinicDto = new ClinicResponse();
             clinicDto.setId(doctor.getClinic().getId());
@@ -199,7 +221,6 @@ public class DoctorServiceImpl implements IDoctorService {
             clinicDto.setAddress(doctor.getClinic().getAddress());
             clinicDto.setPhoneNumber(doctor.getClinic().getPhoneNumber());
             clinicDto.setDescription(doctor.getClinic().getDescription());
-            // Lưu ý: Clinic giờ dùng imageUrls (Set)
             clinicDto.setImageUrls(doctor.getClinic().getImageUrls());
             dto.setClinic(clinicDto);
         }

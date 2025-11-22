@@ -1,7 +1,10 @@
 package vn.xuanthai.clinic.booking.dto.response;
 
 import lombok.Data;
+import vn.xuanthai.clinic.booking.enums.Gender;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
@@ -13,6 +16,9 @@ public class DoctorResponse {
     private String description;
     private String academicDegree;
     private BigDecimal price;
+    private String phoneNumber;
+    private Gender gender;
+    private LocalDate birthday;
     private String image; // Avatar
     private Set<String> otherImages; // Ảnh bằng cấp/chứng chỉ
 
