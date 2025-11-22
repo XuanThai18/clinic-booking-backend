@@ -4,14 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.xuanthai.clinic.booking.dto.request.CreateUserRequest;
+import vn.xuanthai.clinic.booking.dto.request.UserUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.entity.PasswordHistory;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
 import vn.xuanthai.clinic.booking.exception.BadRequestException;
+import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.PasswordHistoryRepository;
 import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
@@ -60,6 +63,25 @@ public class UserServiceImpl implements IUserService {
 
         // 5. Lưu vào CSDL
         return userRepository.save(newUser);
+    }
+
+    @Override
+    public UserResponse updateMyProfile(UserUpdateRequest request) {
+        // 1. Lấy user đang đăng nhập từ SecurityContext
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // 2. Cập nhật thông tin (chỉ cập nhật nếu client có gửi giá trị lên)
+        if (request.getFullName() != null) currentUser.setFullName(request.getFullName());
+        if (request.getPhoneNumber() != null) currentUser.setPhoneNumber(request.getPhoneNumber());
+        if (request.getAddress() != null) currentUser.setAddress(request.getAddress());
+        if (request.getGender() != null) currentUser.setGender(request.getGender());
+        if (request.getBirthday() != null) currentUser.setBirthday(request.getBirthday());
+
+        // 3. Lưu và trả về DTO
+        User updatedUser = userRepository.save(currentUser);
+        return mapToUserResponse(updatedUser);
     }
 
     public void changeUserPassword(User user, String newPassword) {
