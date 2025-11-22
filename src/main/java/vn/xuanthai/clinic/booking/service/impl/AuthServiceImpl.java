@@ -53,6 +53,8 @@ public class AuthServiceImpl implements IAuthService {
         newUser.setEmail(request.getEmail());
         newUser.setPhoneNumber(request.getPhoneNumber());
         newUser.setAddress(request.getAddress());
+        newUser.setGender(request.getGender());
+        newUser.setBirthday(request.getBirthday());
 
         // 3. Băm mật khẩu
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));

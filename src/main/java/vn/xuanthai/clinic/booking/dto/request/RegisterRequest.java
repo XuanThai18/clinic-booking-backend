@@ -2,6 +2,9 @@ package vn.xuanthai.clinic.booking.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import vn.xuanthai.clinic.booking.enums.Gender;
+
+import java.time.LocalDate;
 
 @Data
 public class RegisterRequest {
@@ -26,6 +29,13 @@ public class RegisterRequest {
 
     @NotBlank(message = "Địa chỉ không được để trống")
     private String address;
+
+    @NotNull(message = "Vui lòng chọn giới tính")
+    private Gender gender;
+
+    @NotNull(message = "Vui lòng chọn ngày sinh")
+    @Past(message = "Ngày sinh phải là ngày trong quá khứ") // Kiểm tra ngày hợp lệ
+    private LocalDate birthday;
 
     @NotEmpty(message = "Mã CAPTCHA không được để trống")
     private String captchaResponse;
