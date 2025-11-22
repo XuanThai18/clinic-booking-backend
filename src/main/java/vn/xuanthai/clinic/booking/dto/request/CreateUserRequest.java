@@ -31,6 +31,7 @@ public class CreateUserRequest {
     private String address;
 
     private Gender gender;
+
     private LocalDate birthday;
 
     // Đây là phần quan trọng nhất: Admin sẽ gửi lên một danh sách TÊN của các role

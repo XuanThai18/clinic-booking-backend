@@ -7,10 +7,12 @@ import org.springframework.stereotype.Component;
 import vn.xuanthai.clinic.booking.entity.Permission;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
+import vn.xuanthai.clinic.booking.enums.Gender;
 import vn.xuanthai.clinic.booking.repository.PermissionRepository;
 import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -80,6 +82,11 @@ public class DataSeeder implements CommandLineRunner {
             superAdmin.setPassword(passwordEncoder.encode("Xuanthai1811@"));
             superAdmin.setAddress("17A Cong Hoa, Tan Binh, HCM");
             superAdmin.setPhoneNumber("0397720010");
+            // 1. Set Giới tính (Dùng Enum)
+            superAdmin.setGender(Gender.MALE); // Hoặc Gender.FEMALE / Gender.OTHER
+
+            // 2. Set Ngày sinh (Năm, Tháng, Ngày)
+            superAdmin.setBirthday(LocalDate.of(2004, 11, 18));
             superAdmin.setActive(true);
             superAdmin.setRoles(Set.of(superAdminRole));
 
