@@ -195,31 +195,11 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public UserResponsePage getAllUsersWithSearch(String keyword, String roleName, Pageable pageable) {
-        // 1. Tạo Specification (Bộ lọc động)
-        Specification<User> spec = (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
 
-            // Lọc theo từ khóa (Tên hoặc Email)
-            if (keyword != null && !keyword.isEmpty()) {
-                String likePattern = "%" + keyword.toLowerCase() + "%";
-                Predicate nameLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), likePattern);
-                Predicate emailLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), likePattern);
-                predicates.add(criteriaBuilder.or(nameLike, emailLike));
-            }
+        // Gọi Repository trực tiếp - Đơn giản và hiệu quả hơn
+        Page<User> pageResult = userRepository.searchUsers(keyword, roleName, pageable);
 
-            // Lọc theo Role (Nâng cao: Join bảng roles)
-            if (roleName != null && !roleName.isEmpty()) {
-                // join("roles").get("name") tương đương: user JOIN roles ON ... WHERE role.name = ?
-                predicates.add(criteriaBuilder.equal(root.join("roles").get("name"), roleName));
-            }
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-
-        // 2. Gọi Repository với Specification và Pageable
-        Page<User> pageResult = userRepository.findAll(spec, pageable);
-
-        // 3. Chuyển đổi sang DTO và đóng gói vào UserResponsePage
+        // Phần map và trả về giữ nguyên
         List<UserResponse> content = pageResult.getContent().stream()
                 .map(this::mapToUserResponse)
                 .collect(Collectors.toList());
