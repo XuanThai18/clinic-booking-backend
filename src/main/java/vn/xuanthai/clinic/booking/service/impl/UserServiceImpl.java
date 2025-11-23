@@ -109,6 +109,12 @@ public class UserServiceImpl implements IUserService {
         user.setGender(request.getGender());
         user.setBirthday(request.getBirthday());
 
+        if (request.getIsActive() != null) {
+            user.setActive(request.getIsActive());
+        } else {
+            user.setActive(true); // Mặc định active
+        }
+
         // Cập nhật roles nếu có thay đổi
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
             Set<Role> newRoles = request.getRoles().stream()

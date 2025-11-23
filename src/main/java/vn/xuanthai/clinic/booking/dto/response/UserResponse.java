@@ -1,5 +1,6 @@
 package vn.xuanthai.clinic.booking.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import vn.xuanthai.clinic.booking.enums.Gender;
 
@@ -16,6 +17,7 @@ public class UserResponse {
     private String address;
     private Gender gender;
     private LocalDate birthday;
+    @JsonProperty("isActive")
     private boolean isActive;
     private LocalDateTime createdAt;
     private Set<String> roles; // Chỉ trả về tên của các role
