@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.DoctorCreateRequest;
+import vn.xuanthai.clinic.booking.dto.request.DoctorRegistrationRequest;
 import vn.xuanthai.clinic.booking.dto.response.DoctorResponse;
 import vn.xuanthai.clinic.booking.service.IDoctorService;
 
@@ -26,6 +27,14 @@ public class DoctorController {
     public ResponseEntity<DoctorResponse> createDoctorProfile(@Valid @RequestBody DoctorCreateRequest request) {
         DoctorResponse createdDoctor = doctorService.createDoctorProfile(request);
         return new ResponseEntity<>(createdDoctor, HttpStatus.CREATED);
+    }
+
+    // --- API MỚI: ĐĂNG KÝ BÁC SĨ TRỌN GÓI ---
+    @PostMapping("/admin/doctors/register")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<DoctorResponse> registerDoctor(@Valid @RequestBody DoctorRegistrationRequest request) {
+        DoctorResponse newDoctor = doctorService.registerDoctor(request);
+        return new ResponseEntity<>(newDoctor, HttpStatus.CREATED);
     }
 
     // ----- CÁC API CÔNG KHAI (CHO BỆNH NHÂN) -----

@@ -1,12 +1,16 @@
 package vn.xuanthai.clinic.booking.service;
 
 import vn.xuanthai.clinic.booking.dto.request.DoctorCreateRequest;
+import vn.xuanthai.clinic.booking.dto.request.DoctorRegistrationRequest;
 import vn.xuanthai.clinic.booking.dto.response.DoctorResponse;
 import java.util.List;
 
 public interface IDoctorService {
 
     DoctorResponse createDoctorProfile(DoctorCreateRequest request);
+
+    // Hàm mới: Đăng ký trọn gói
+    DoctorResponse registerDoctor(DoctorRegistrationRequest request);
 
     DoctorResponse getDoctorById(Long doctorId);
 

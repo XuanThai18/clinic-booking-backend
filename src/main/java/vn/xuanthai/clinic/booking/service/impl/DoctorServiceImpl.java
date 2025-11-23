@@ -1,21 +1,18 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.xuanthai.clinic.booking.dto.request.DoctorCreateRequest;
+import vn.xuanthai.clinic.booking.dto.request.DoctorRegistrationRequest;
 import vn.xuanthai.clinic.booking.dto.response.ClinicResponse;
 import vn.xuanthai.clinic.booking.dto.response.DoctorResponse;
 import vn.xuanthai.clinic.booking.dto.response.SpecialtyResponse;
-import vn.xuanthai.clinic.booking.entity.Clinic;
-import vn.xuanthai.clinic.booking.entity.Doctor;
-import vn.xuanthai.clinic.booking.entity.Specialty;
-import vn.xuanthai.clinic.booking.entity.User;
+import vn.xuanthai.clinic.booking.entity.*;
+import vn.xuanthai.clinic.booking.exception.BadRequestException;
 import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
-import vn.xuanthai.clinic.booking.repository.ClinicRepository;
-import vn.xuanthai.clinic.booking.repository.DoctorRepository;
-import vn.xuanthai.clinic.booking.repository.SpecialtyRepository;
-import vn.xuanthai.clinic.booking.repository.UserRepository;
+import vn.xuanthai.clinic.booking.repository.*;
 import vn.xuanthai.clinic.booking.service.IDoctorService;
 import vn.xuanthai.clinic.booking.service.IFileService;
 
@@ -33,6 +30,8 @@ public class DoctorServiceImpl implements IDoctorService {
     private final SpecialtyRepository specialtyRepository;
     private final ClinicRepository clinicRepository;
     private final IFileService fileService;
+    private final RoleRepository roleRepository; // Cần thêm cái này để tìm ROLE_DOCTOR
+    private final PasswordEncoder passwordEncoder; // Cần thêm cái này để mã hóa mật khẩu
 
     @Override
     @Transactional // Đảm bảo tất cả cùng thành công hoặc thất bại
@@ -75,6 +74,63 @@ public class DoctorServiceImpl implements IDoctorService {
         Doctor savedDoctor = doctorRepository.save(newDoctor);
 
         // 5. Ánh xạ sang DTO để trả về
+        return mapToDoctorResponse(savedDoctor);
+    }
+
+    @Override
+    @Transactional // CỰC KỲ QUAN TRỌNG: Nếu bước 2 lỗi, bước 1 (tạo user) sẽ tự động rollback
+    public DoctorResponse registerDoctor(DoctorRegistrationRequest request) {
+
+        // --- BƯỚC 1: TẠO TÀI KHOẢN USER ---
+
+        // 1.1. Kiểm tra email trùng
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadRequestException("Email đã tồn tại trong hệ thống.");
+        }
+
+        // 1.2. Tạo User Entity
+        User newUser = new User();
+        newUser.setFullName(request.getFullName());
+        newUser.setEmail(request.getEmail());
+        newUser.setPassword(passwordEncoder.encode(request.getPassword())); // Mã hóa pass
+        newUser.setPhoneNumber(request.getPhoneNumber());
+        newUser.setAddress(request.getAddress());
+        newUser.setGender(request.getGender());
+        newUser.setBirthday(request.getBirthday());
+        newUser.setActive(true);
+
+        // 1.3. Gán quyền Bác sĩ
+        Role doctorRole = roleRepository.findByName("ROLE_DOCTOR")
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò DOCTOR trong hệ thống."));
+        newUser.setRoles(java.util.Set.of(doctorRole));
+
+        // 1.4. Lưu User (Để lấy ID cho bước sau)
+        User savedUser = userRepository.save(newUser);
+
+
+        // --- BƯỚC 2: TẠO HỒ SƠ BÁC SĨ ---
+
+        // 2.1. Tìm Chuyên khoa và Phòng khám
+        Specialty specialty = specialtyRepository.findById(request.getSpecialtyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Chuyên khoa"));
+        Clinic clinic = clinicRepository.findById(request.getClinicId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phòng khám"));
+
+        // 2.2. Tạo Doctor Entity
+        Doctor newDoctor = new Doctor();
+        newDoctor.setUser(savedUser); // Liên kết với User vừa tạo
+        newDoctor.setSpecialty(specialty);
+        newDoctor.setClinic(clinic);
+        newDoctor.setDescription(request.getDescription());
+        newDoctor.setAcademicDegree(request.getAcademicDegree());
+        newDoctor.setPrice(request.getPrice());
+        newDoctor.setImage(request.getImage());
+        newDoctor.setOtherImages(request.getOtherImages());
+
+        // 2.3. Lưu Doctor
+        Doctor savedDoctor = doctorRepository.save(newDoctor);
+
+        // --- BƯỚC 3: TRẢ VỀ KẾT QUẢ ---
         return mapToDoctorResponse(savedDoctor);
     }
 
@@ -161,22 +217,22 @@ public class DoctorServiceImpl implements IDoctorService {
     @Transactional
     public void deleteDoctor(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bác sĩ với ID: " + doctorId));
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found"));
 
-        // 1. Xóa Avatar
-        if (doctor.getImage() != null) {
-            fileService.deleteFile(doctor.getImage());
-        }
+        // 1. Lưu lại User ID trước khi xóa Doctor
+        Long userId = doctor.getUser().getId();
 
-        // 2. Xóa Chứng chỉ
+        // 2. Xóa ảnh trên Cloudinary (Code cũ)
+        if (doctor.getImage() != null) fileService.deleteFile(doctor.getImage());
         if (doctor.getOtherImages() != null) {
-            for (String url : doctor.getOtherImages()) {
-                fileService.deleteFile(url);
-            }
+            for (String url : doctor.getOtherImages()) fileService.deleteFile(url);
         }
 
-        // 3. Xóa trong DB
+        // 3. Xóa Hồ sơ Bác sĩ trước (Vì Doctor tham chiếu đến User)
         doctorRepository.delete(doctor);
+
+        // 4. Xóa luôn Tài khoản User
+        userRepository.deleteById(userId);
     }
 
     // --- Phương thức trợ giúp để ánh xạ ---
