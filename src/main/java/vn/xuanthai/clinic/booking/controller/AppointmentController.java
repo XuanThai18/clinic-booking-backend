@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
+import vn.xuanthai.clinic.booking.enums.AppointmentStatus;
 import vn.xuanthai.clinic.booking.service.IAppointmentService;
 
 import java.util.List;
@@ -48,5 +49,15 @@ public class AppointmentController {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<AppointmentResponse>> getAllAppointments() {
         return ResponseEntity.ok(appointmentService.getAllAppointments());
+    }
+
+    @PutMapping("/admin/appointments/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> updateAppointmentStatus(
+            @PathVariable Long id,
+            @RequestParam AppointmentStatus status) { // Nhận status từ param url?status=...
+
+        appointmentService.updateStatus(id, status);
+        return ResponseEntity.ok().build();
     }
 }

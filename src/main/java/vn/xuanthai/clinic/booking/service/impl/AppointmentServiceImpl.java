@@ -88,6 +88,29 @@ public class AppointmentServiceImpl implements IAppointmentService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional // Quan trọng để đảm bảo dữ liệu nhất quán
+    public void updateStatus(Long appointmentId, AppointmentStatus newStatus) {
+        // 1. Tìm lịch hẹn
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn: " + appointmentId));
+
+        // 2. Cập nhật trạng thái lịch hẹn
+        appointment.setStatus(newStatus);
+        appointmentRepository.save(appointment);
+
+        // 3. LOGIC ĐẶC BIỆT:
+        // Nếu Admin chuyển trạng thái thành CANCELLED (Hủy)
+        // -> Phải trả lại khung giờ (Schedule) thành AVAILABLE (Còn trống) để người khác đặt
+        if (newStatus == AppointmentStatus.CANCELLED) {
+            Schedule schedule = appointment.getSchedule();
+            schedule.setStatus(ScheduleStatus.AVAILABLE);
+            scheduleRepository.save(schedule);
+        }
+
+        // (Ngược lại, nếu Admin khôi phục lại lịch hủy -> Có thể cần check xem Schedule còn trống không, nhưng tạm thời ta chỉ xử lý luồng Hủy đơn giản).
+    }
+
     /**
      * Hủy một lịch hẹn.
      * Chỉ có chủ nhân của lịch hẹn (Patient) hoặc Admin/SuperAdmin mới có quyền này.
