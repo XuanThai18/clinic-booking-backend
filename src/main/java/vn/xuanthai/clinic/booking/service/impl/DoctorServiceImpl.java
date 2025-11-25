@@ -34,30 +34,42 @@ public class DoctorServiceImpl implements IDoctorService {
     private final PasswordEncoder passwordEncoder; // Cần thêm cái này để mã hóa mật khẩu
 
     @Override
-    @Transactional // Đảm bảo tất cả cùng thành công hoặc thất bại
+    @Transactional
     public DoctorResponse createDoctorProfile(DoctorCreateRequest request) {
         // 1. Tìm User
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + request.getUserId()));
 
-        // --- BƯỚC MỚI: CẬP NHẬT THÔNG TIN CÁ NHÂN VÀO USER ---
-        if (request.getGender() != null) {
-            user.setGender(request.getGender());
+        // --- BỔ SUNG 1: KIỂM TRA XEM ĐÃ CÓ HỒ SƠ CHƯA ---
+        // (Em cần viết hàm findByUserId trong DoctorRepository trước nhé)
+        if (doctorRepository.findByUserId(request.getUserId()).isPresent()) {
+            throw new BadRequestException("Người dùng này đã có hồ sơ bác sĩ rồi. Vui lòng dùng chức năng Sửa.");
         }
-        if (request.getBirthday() != null) {
-            user.setBirthday(request.getBirthday());
+        // ------------------------------------------------
+
+        // --- BƯỚC CŨ: CẬP NHẬT THÔNG TIN CÁ NHÂN ---
+        if (request.getGender() != null) user.setGender(request.getGender());
+        if (request.getBirthday() != null) user.setBirthday(request.getBirthday());
+
+        // --- BỔ SUNG 2: TỰ ĐỘNG CẤP QUYỀN ROLE_DOCTOR (NẾU CHƯA CÓ) ---
+        boolean hasDoctorRole = user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals("ROLE_DOCTOR"));
+
+        if (!hasDoctorRole) {
+            Role doctorRole = roleRepository.findByName("ROLE_DOCTOR")
+                    .orElseThrow(() -> new ResourceNotFoundException("Lỗi hệ thống: Không tìm thấy ROLE_DOCTOR"));
+            // Vì user.getRoles() trả về Set, ta có thể add thêm vào
+            user.getRoles().add(doctorRole);
         }
-        // Hibernate sẽ tự động lưu thay đổi của user khi transaction kết thúc
-        // -----------------------------------------------------
+        // -------------------------------------------------------------
 
         // 2. Tìm Chuyên khoa và Phòng khám
         Specialty specialty = specialtyRepository.findById(request.getSpecialtyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Chuyên khoa với ID: " + request.getSpecialtyId()));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Chuyên khoa"));
         Clinic clinic = clinicRepository.findById(request.getClinicId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phòng khám với ID: " + request.getClinicId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phòng khám"));
 
-        // 3. Tạo Entity Doctor mới
+        // 3. Tạo Entity Doctor mới (Giữ nguyên code của em)
         Doctor newDoctor = new Doctor();
         newDoctor.setUser(user);
         newDoctor.setSpecialty(specialty);
@@ -65,15 +77,11 @@ public class DoctorServiceImpl implements IDoctorService {
         newDoctor.setDescription(request.getDescription());
         newDoctor.setAcademicDegree(request.getAcademicDegree());
         newDoctor.setPrice(request.getPrice());
+        newDoctor.setImage(request.getImage());
+        newDoctor.setOtherImages(request.getOtherImages());
 
-        // Lưu ảnh
-        newDoctor.setImage(request.getImage());             // Lưu Avatar
-        newDoctor.setOtherImages(request.getOtherImages()); // Lưu danh sách ảnh chứng chỉ
-
-        // 4. Lưu vào CSDL
+        // 4. Lưu
         Doctor savedDoctor = doctorRepository.save(newDoctor);
-
-        // 5. Ánh xạ sang DTO để trả về
         return mapToDoctorResponse(savedDoctor);
     }
 

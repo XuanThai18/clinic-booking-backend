@@ -13,6 +13,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     // Hữu ích khi cần tìm hồ sơ bác sĩ từ đối tượng User đang đăng nhập
     Optional<Doctor> findByUser(User user);
+    Optional<Doctor> findByUserId(Long userId);
 
     List<Doctor> findBySpecialtyId(Long specialtyId);
 }

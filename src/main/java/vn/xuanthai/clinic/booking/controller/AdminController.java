@@ -27,7 +27,7 @@ public class AdminController {
     private final IUserService userService;
 
     @PostMapping("/users")
-    @PreAuthorize("hasAuthority('USER_MANAGE_ROLES')")
+    @PreAuthorize("hasAuthority('USER_CREATE')")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         // 1. Gọi service để tạo User Entity
         User createdUser = userService.createUserByAdmin(request);
@@ -40,26 +40,26 @@ public class AdminController {
     }
 
     @GetMapping("/users/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('USER_VIEW')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PutMapping("/users/{id}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')") // Chỉ Super Admin mới sửa được user khác
+    @PreAuthorize("hasAuthority('USER_EDIT')") // Chỉ Super Admin mới sửa được user khác
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody CreateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
     @DeleteMapping("/users/{id}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')") // Chỉ Super Admin mới xóa được user
+    @PreAuthorize("hasAuthority('USER_DELETE')") // Chỉ Super Admin mới xóa được user
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/users") // Thay thế hàm getAllUsers cũ
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('USER_VIEW')")
     public ResponseEntity<UserResponsePage> getAllUsers(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(required = false) String role,

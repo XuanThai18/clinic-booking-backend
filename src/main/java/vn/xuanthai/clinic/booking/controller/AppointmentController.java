@@ -46,13 +46,13 @@ public class AppointmentController {
     // ----- API DÀNH CHO ADMIN -----
 
     @GetMapping("/admin/appointments")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('APPOINTMENT_VIEW')")
     public ResponseEntity<List<AppointmentResponse>> getAllAppointments() {
         return ResponseEntity.ok(appointmentService.getAllAppointments());
     }
 
     @PutMapping("/admin/appointments/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('APPOINTMENT_APPROVE') or hasAuthority('APPOINTMENT_CANCEL')")
     public ResponseEntity<Void> updateAppointmentStatus(
             @PathVariable Long id,
             @RequestParam AppointmentStatus status) { // Nhận status từ param url?status=...

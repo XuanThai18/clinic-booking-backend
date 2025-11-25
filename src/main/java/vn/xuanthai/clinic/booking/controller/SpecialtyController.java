@@ -35,21 +35,21 @@ public class SpecialtyController {
     // ----- CÁC API QUẢN TRỊ (CHO ADMIN) -----
 
     @PostMapping("/admin/specialties")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SPECIALTY_CREATE')")
     public ResponseEntity<SpecialtyResponse> createSpecialty(@Valid @RequestBody SpecialtyRequest request) {
         SpecialtyResponse createdSpecialty = specialtyService.createSpecialty(request);
         return new ResponseEntity<>(createdSpecialty, HttpStatus.CREATED); // Trả về 201 Created
     }
 
     @PutMapping("/admin/specialties/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SPECIALTY_UPDATE')")
     public ResponseEntity<SpecialtyResponse> updateSpecialty(@PathVariable Long id,
                                                              @Valid @RequestBody SpecialtyRequest request) {
         return ResponseEntity.ok(specialtyService.updateSpecialty(id, request));
     }
 
     @DeleteMapping("/admin/specialties/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SPECIALTY_DELETE')")
     public ResponseEntity<Void> deleteSpecialty(@PathVariable Long id) {
         specialtyService.deleteSpecialty(id);
         return ResponseEntity.noContent().build(); // Trả về 204 No Content

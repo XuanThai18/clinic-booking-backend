@@ -22,47 +22,82 @@ public class DataSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
-    private final UserRepository userRepository; // THÊM VÀO
-    private final PasswordEncoder passwordEncoder; // THÊM VÀO
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
         // === 1. TẠO CÁC QUYỀN (PERMISSIONS) ===
-        // Quyền quản lý người dùng
+
+        // Quyền quản lý người dùng (User)
         Permission userView = createPermissionIfNotFound("USER_VIEW");
         Permission userCreate = createPermissionIfNotFound("USER_CREATE");
         Permission userEdit = createPermissionIfNotFound("USER_EDIT");
-        Permission userDelete = createPermissionIfNotFound("USER_DELETE");
+        Permission userDelete = createPermissionIfNotFound("USER_DELETE"); // Nguy hiểm, thường chỉ Super Admin
         Permission userManageRoles = createPermissionIfNotFound("USER_MANAGE_ROLES"); // Quyền lực nhất
 
-        // Quyền quản lý nghiệp vụ
-        Permission doctorManageSchedule = createPermissionIfNotFound("DOCTOR_MANAGE_SCHEDULE");
+        // Quyền quản lý chuyên khoa (Specialty)
+        Permission specialtyCreate = createPermissionIfNotFound("SPECIALTY_CREATE");
+        Permission specialtyUpdate = createPermissionIfNotFound("SPECIALTY_UPDATE");
+        Permission specialtyDelete = createPermissionIfNotFound("SPECIALTY_DELETE");
+
+        // Quyền quản lý phòng khám (Clinic)
+        Permission clinicCreate = createPermissionIfNotFound("CLINIC_CREATE");
+        Permission clinicUpdate = createPermissionIfNotFound("CLINIC_UPDATE");
+        Permission clinicDelete = createPermissionIfNotFound("CLINIC_DELETE");
+
+        // Quyền quản lý bác sĩ (Doctor)
+        Permission doctorCreate = createPermissionIfNotFound("DOCTOR_CREATE");
+        Permission doctorUpdate = createPermissionIfNotFound("DOCTOR_UPDATE");
+        Permission doctorDelete = createPermissionIfNotFound("DOCTOR_DELETE");
+        Permission doctorManageSchedule = createPermissionIfNotFound("DOCTOR_MANAGE_SCHEDULE"); // Bác sĩ tự xếp lịch
+
+        // Quyền quản lý lịch hẹn (Appointment)
+        Permission appointmentView = createPermissionIfNotFound("APPOINTMENT_VIEW"); // Admin xem danh sách
         Permission appointmentApprove = createPermissionIfNotFound("APPOINTMENT_APPROVE");
         Permission appointmentCancel = createPermissionIfNotFound("APPOINTMENT_CANCEL");
+
+        // Quyền hệ thống khác
+        Permission fileUpload = createPermissionIfNotFound("FILE_UPLOAD");
 
 
         // === 2. TẠO CÁC VAI TRÒ (ROLES) VÀ GÁN QUYỀN ===
 
-        // Role PATIENT chỉ có quyền cơ bản
+        // Role PATIENT: Quyền hạn rất hạn chế (thường được xử lý riêng trong logic code)
         createRoleIfNotFound("ROLE_PATIENT", Set.of(
-                // Sau này có thể thêm các quyền như APPOINTMENT_CREATE_OWN
+                // Có thể thêm các quyền như "APPOINTMENT_CREATE_OWN" nếu muốn quản lý chặt chẽ
         ));
 
-        // Role DOCTOR có quyền quản lý lịch của mình
+        // Role DOCTOR: Bác sĩ cần quyền quản lý lịch của mình
         createRoleIfNotFound("ROLE_DOCTOR", Set.of(
                 doctorManageSchedule
+                // Có thể thêm doctorUpdate nếu muốn bác sĩ tự sửa hồ sơ
         ));
 
-        // Role ADMIN có quyền quản lý nghiệp vụ, nhưng không có quyền tạo Admin khác
+        // Role ADMIN: Quản lý vận hành (nhưng không quản lý User cấp cao)
         createRoleIfNotFound("ROLE_ADMIN", Set.of(
-                userView,
-                userCreate,
-                userEdit,
-                appointmentApprove,
-                appointmentCancel
+                // User
+                userView, userCreate, userEdit,
+                // Không có userDelete và userManageRoles
+
+                // Specialty
+                specialtyCreate, specialtyUpdate, specialtyDelete,
+
+                // Clinic
+                clinicCreate, clinicUpdate, clinicDelete,
+
+                // Doctor
+                doctorCreate, doctorUpdate, doctorDelete, doctorManageSchedule,
+
+                // Appointment
+                appointmentView, appointmentApprove, appointmentCancel,
+
+                // System
+                fileUpload
         ));
 
-        // Role SUPER_ADMIN có tất cả các quyền
+        // Role SUPER_ADMIN: Quyền lực tuyệt đối (Lấy tất cả permission hiện có trong DB)
+        // Lưu ý: Phải dùng new HashSet để tránh lỗi immutable list nếu findAll trả về list không đổi
         Role superAdminRole = createRoleIfNotFound("ROLE_SUPER_ADMIN", new HashSet<>(permissionRepository.findAll()));
 
 
@@ -82,30 +117,34 @@ public class DataSeeder implements CommandLineRunner {
             superAdmin.setPassword(passwordEncoder.encode("Xuanthai1811@"));
             superAdmin.setAddress("17A Cong Hoa, Tan Binh, HCM");
             superAdmin.setPhoneNumber("0397720010");
-            // 1. Set Giới tính (Dùng Enum)
-            superAdmin.setGender(Gender.MALE); // Hoặc Gender.FEMALE / Gender.OTHER
 
-            // 2. Set Ngày sinh (Năm, Tháng, Ngày)
+            // Set thông tin cá nhân
+            superAdmin.setGender(Gender.MALE);
             superAdmin.setBirthday(LocalDate.of(2004, 11, 18));
+
             superAdmin.setActive(true);
             superAdmin.setRoles(Set.of(superAdminRole));
 
             userRepository.save(superAdmin);
-            System.out.println("======> Created SUPER_ADMIN account with default password 'Xuanthai1811@'");
+            System.out.println("======> Created SUPER_ADMIN account: superadmin@clinic.com / Xuanthai1811@");
         }
     }
 
     private Permission createPermissionIfNotFound(String name) {
-        // Kiểm tra permission đã tồn tại chưa
         return permissionRepository.findByName(name)
-                // Nếu chưa, tạo mới và lưu lại
                 .orElseGet(() -> permissionRepository.save(new Permission(name)));
     }
 
     private Role createRoleIfNotFound(String name, Set<Permission> permissions) {
-        // Kiểm tra role đã tồn tại chưa
         return roleRepository.findByName(name)
+                .map(role -> {
+                    // Nếu role đã tồn tại, CẬP NHẬT lại quyền cho nó (để đảm bảo luôn đúng với code mới nhất)
+                    // Đây là logic quan trọng khi em thêm quyền mới vào code
+                    role.setPermissions(permissions);
+                    return roleRepository.save(role);
+                })
                 .orElseGet(() -> {
+                    // Nếu chưa tồn tại, tạo mới
                     Role role = new Role(name);
                     role.setPermissions(permissions);
                     return roleRepository.save(role);

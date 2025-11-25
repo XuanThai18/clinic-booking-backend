@@ -34,21 +34,21 @@ public class ClinicController {
     // ----- CÁC API QUẢN TRỊ (CHO ADMIN) -----
 
     @PostMapping("/admin/clinics")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('CLINIC_CREATE')")
     public ResponseEntity<ClinicResponse> createClinic(@Valid @RequestBody ClinicRequest request) {
         ClinicResponse createdClinic = clinicService.createClinic(request);
         return new ResponseEntity<>(createdClinic, HttpStatus.CREATED);
     }
 
     @PutMapping("/admin/clinics/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('CLINIC_UPDATE')")
     public ResponseEntity<ClinicResponse> updateClinic(@PathVariable Long id,
                                                        @Valid @RequestBody ClinicRequest request) {
         return ResponseEntity.ok(clinicService.updateClinic(id, request));
     }
 
     @DeleteMapping("/admin/clinics/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('CLINIC_DELETE')")
     public ResponseEntity<Void> deleteClinic(@PathVariable Long id) {
         clinicService.deleteClinic(id);
         return ResponseEntity.noContent().build();

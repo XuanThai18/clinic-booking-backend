@@ -35,7 +35,6 @@ public class User {
     private String password;
 
     @Column(name = "full_name", nullable = false)
-    @Convert(converter = StringCryptoConverter.class)
     private String fullName;
 
     @Column(name = "phone_number", length = 255, unique = true)

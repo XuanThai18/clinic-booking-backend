@@ -23,7 +23,7 @@ public class DoctorController {
     // ----- API QUẢN TRỊ (CHO ADMIN) -----
 
     @PostMapping("/admin/doctors")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_CREATE')")
     public ResponseEntity<DoctorResponse> createDoctorProfile(@Valid @RequestBody DoctorCreateRequest request) {
         DoctorResponse createdDoctor = doctorService.createDoctorProfile(request);
         return new ResponseEntity<>(createdDoctor, HttpStatus.CREATED);
@@ -31,10 +31,26 @@ public class DoctorController {
 
     // --- API MỚI: ĐĂNG KÝ BÁC SĨ TRỌN GÓI ---
     @PostMapping("/admin/doctors/register")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_CREATE')")
     public ResponseEntity<DoctorResponse> registerDoctor(@Valid @RequestBody DoctorRegistrationRequest request) {
         DoctorResponse newDoctor = doctorService.registerDoctor(request);
         return new ResponseEntity<>(newDoctor, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/admin/doctors/{id}")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_UPDATE')")
+    public ResponseEntity<DoctorResponse> updateDoctorProfile(
+            @PathVariable Long id,
+            @Valid @RequestBody DoctorCreateRequest request) {
+
+        return ResponseEntity.ok(doctorService.updateDoctorProfile(id, request));
+    }
+
+    @DeleteMapping("/admin/doctors/{id}")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_DELETE')")
+    public ResponseEntity<Void> deleteDoctor(@PathVariable Long id) {
+        doctorService.deleteDoctor(id);
+        return ResponseEntity.noContent().build();
     }
 
     // ----- CÁC API CÔNG KHAI (CHO BỆNH NHÂN) -----
@@ -52,21 +68,5 @@ public class DoctorController {
     @GetMapping("/public/specialties/{id}/doctors")
     public ResponseEntity<List<DoctorResponse>> getDoctorsBySpecialty(@PathVariable Long id) {
         return ResponseEntity.ok(doctorService.findDoctorsBySpecialty(id));
-    }
-
-    @PutMapping("/admin/doctors/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<DoctorResponse> updateDoctorProfile(
-            @PathVariable Long id,
-            @Valid @RequestBody DoctorCreateRequest request) {
-
-        return ResponseEntity.ok(doctorService.updateDoctorProfile(id, request));
-    }
-
-    @DeleteMapping("/admin/doctors/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<Void> deleteDoctor(@PathVariable Long id) {
-        doctorService.deleteDoctor(id);
-        return ResponseEntity.noContent().build();
     }
 }

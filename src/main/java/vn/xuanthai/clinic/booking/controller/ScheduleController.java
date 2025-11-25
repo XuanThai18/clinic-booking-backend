@@ -25,7 +25,7 @@ public class ScheduleController {
     // ----- API DÀNH CHO BÁC SĨ / ADMIN -----
 
     @PostMapping("/admin/schedules")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_DOCTOR')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_MANAGE_SCHEDULE')")
     public ResponseEntity<List<ScheduleResponse>> createDoctorSchedule(
             @Valid @RequestBody ScheduleCreateRequest request,
             Authentication authentication) { // Spring sẽ tự động "tiêm" thông tin người dùng đang đăng nhập vào đây
@@ -36,7 +36,7 @@ public class ScheduleController {
 
     // API cho Admin xem lịch chi tiết của một bác sĩ
     @GetMapping("/admin/doctors/{doctorId}/schedules")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_MANAGE_SCHEDULE')")
     public ResponseEntity<List<ScheduleResponse>> getFullScheduleForAdmin(
             @PathVariable Long doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {

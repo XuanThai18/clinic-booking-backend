@@ -18,7 +18,7 @@ public class FileController {
     private final IFileService fileService;
 
     @PostMapping("/upload-multiple") // Đổi tên endpoint cho rõ nghĩa
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('FILE_UPLOAD')")
     public ResponseEntity<Map<String, ?>> uploadFiles(
             // Sửa từ ("file") MultipartFile file
             // thành ("files") MultipartFile[] files
