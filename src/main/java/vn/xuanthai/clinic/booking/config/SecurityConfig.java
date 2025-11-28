@@ -19,8 +19,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import vn.xuanthai.clinic.booking.security.JwtAuthFilter;
 import vn.xuanthai.clinic.booking.security.JwtAuthenticationEntryPoint;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -34,13 +39,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable) // Tắt CSRF vì dùng API stateless
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/other-public-api/**",
-                                "/api/public/**", "/api/admin/**") // Các API public
+                        .requestMatchers(
+                        "/api/auth/**",
+                                "/other-public-api/**",
+                                "/api/public/**") // Các API public
                         .permitAll()
                         .anyRequest() // Mọi request khác
                         .authenticated() // Đều cần phải xác thực
@@ -50,6 +58,28 @@ public class SecurityConfig {
                 .addFilterBefore((Filter) jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Thêm filter JWT
 
         return http.build();
+    }
+
+    // --- HÀM CẤU HÌNH CORS  ---
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Cho phép Frontend (localhost:5173) truy cập
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+
+        // Cho phép các phương thức
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Cho phép các Header (quan trọng nhất là Authorization)
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+        // Cho phép gửi kèm credentials
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

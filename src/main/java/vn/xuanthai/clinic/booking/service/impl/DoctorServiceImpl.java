@@ -1,6 +1,7 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -154,6 +155,26 @@ public class DoctorServiceImpl implements IDoctorService {
         return doctorRepository.findAll().stream()
                 .map(this::mapToDoctorResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public DoctorResponse getMyDoctorProfile() {
+        // 1. Lấy email của người đang đăng nhập từ SecurityContext
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // 1. In log ra để debug xem ai đang đăng nhập
+        System.out.println("DEBUG: Đang tìm profile cho email: " + currentEmail);
+
+        // 2. Tìm User theo email
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng."));
+
+        // 3. Tìm Doctor theo User ID
+        Doctor doctor = doctorRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa có hồ sơ bác sĩ. Vui lòng liên hệ Admin."));
+
+        // 4. Ánh xạ sang DTO và trả về
+        return mapToDoctorResponse(doctor);
     }
 
     @Override

@@ -69,4 +69,12 @@ public class DoctorController {
     public ResponseEntity<List<DoctorResponse>> getDoctorsBySpecialty(@PathVariable Long id) {
         return ResponseEntity.ok(doctorService.findDoctorsBySpecialty(id));
     }
+
+    // ----- CÁC API CHO BÁC SĨ -----
+    @GetMapping("/doctors/profile/me")
+    @PreAuthorize("hasAuthority('DOCTOR_MANAGE_SCHEDULE')") // Chỉ Bác sĩ mới gọi được
+    public ResponseEntity<DoctorResponse> getMyDoctorProfile() {
+        // Gọi service xử lý toàn bộ logic
+        return ResponseEntity.ok(doctorService.getMyDoctorProfile());
+    }
 }

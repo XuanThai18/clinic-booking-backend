@@ -24,7 +24,7 @@ public class ScheduleController {
 
     // ----- API DÀNH CHO BÁC SĨ / ADMIN -----
 
-    @PostMapping("/admin/schedules")
+    @PostMapping("/schedules")
     @PreAuthorize("hasAnyAuthority('DOCTOR_MANAGE_SCHEDULE')")
     public ResponseEntity<List<ScheduleResponse>> createDoctorSchedule(
             @Valid @RequestBody ScheduleCreateRequest request,
