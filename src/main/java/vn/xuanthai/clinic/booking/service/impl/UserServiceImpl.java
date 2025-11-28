@@ -1,5 +1,6 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,11 +16,13 @@ import vn.xuanthai.clinic.booking.dto.request.UserUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.dto.response.UserResponsePage;
 import vn.xuanthai.clinic.booking.entity.PasswordHistory;
+import vn.xuanthai.clinic.booking.entity.Permission;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
 import vn.xuanthai.clinic.booking.exception.BadRequestException;
 import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.PasswordHistoryRepository;
+import vn.xuanthai.clinic.booking.repository.PermissionRepository;
 import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.service.IUserService;
@@ -38,6 +41,7 @@ public class UserServiceImpl implements IUserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordHistoryRepository passwordHistoryRepository;
+    private final PermissionRepository permissionRepository;
 
     @Override
     public User createUserByAdmin(CreateUserRequest request) {
@@ -65,6 +69,16 @@ public class UserServiceImpl implements IUserService {
 
         // 4. Gán các vai trò đã tìm thấy
         newUser.setRoles(foundRoles);
+
+        //
+        if (request.getExtraPermissions() != null && !request.getExtraPermissions().isEmpty()) {
+            Set<Permission> permissions = request.getExtraPermissions().stream()
+                    .map(permName -> permissionRepository.findByName(permName)
+                            .orElseThrow(() -> new ResourceNotFoundException("Permission not found: " + permName)))
+                    .collect(Collectors.toSet());
+
+            newUser.setExtraPermissions(permissions);
+        }
 
         // 5. Lưu vào CSDL
         return userRepository.save(newUser);
@@ -122,6 +136,16 @@ public class UserServiceImpl implements IUserService {
                             .orElseThrow(() -> new BadRequestException("Role not found")))
                     .collect(Collectors.toSet());
             user.setRoles(newRoles);
+        }
+
+        // 2. --- UPDATE EXTRA PERMISSIONS (MỚI) ---
+        if (request.getExtraPermissions() != null) {
+            Set<Permission> permissions = request.getExtraPermissions().stream()
+                    .map(permName -> permissionRepository.findByName(permName)
+                            .orElseThrow(() -> new ResourceNotFoundException("Permission not found: " + permName)))
+                    .collect(Collectors.toSet());
+
+            user.setExtraPermissions(permissions);
         }
 
         // Cập nhật mật khẩu nếu có (tùy chọn)
@@ -220,6 +244,34 @@ public class UserServiceImpl implements IUserService {
                 .build();
     }
 
+    // Trong UserServiceImpl.java
+
+    @Override
+    @Transactional
+    public void grantPermissionToUser(Long userId, String permissionName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Permission permission = permissionRepository.findByName(permissionName)
+                .orElseThrow(() -> new ResourceNotFoundException("Permission not found: " + permissionName));
+
+        // Thêm quyền vào danh sách riêng
+        user.getExtraPermissions().add(permission);
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void revokePermissionFromUser(Long userId, String permissionName) {
+        User user = userRepository.findById(userId).orElseThrow();
+
+        // Xóa quyền khỏi danh sách riêng (dùng removeIf)
+        user.getExtraPermissions().removeIf(p -> p.getName().equals(permissionName));
+
+        userRepository.save(user);
+    }
+
     // --- HÀM TRỢ GIÚP (Copy từ Controller vào đây để dùng chung) ---
     private UserResponse mapToUserResponse(User user) {
         UserResponse dto = new UserResponse();
@@ -235,6 +287,9 @@ public class UserServiceImpl implements IUserService {
         // Lấy danh sách tên các role
         dto.setRoles(user.getRoles().stream()
                 .map(Role::getName)
+                .collect(Collectors.toSet()));
+        dto.setExtraPermissions(user.getExtraPermissions().stream()
+                .map(Permission::getName)
                 .collect(Collectors.toSet()));
         return dto;
     }

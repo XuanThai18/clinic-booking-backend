@@ -26,6 +26,14 @@ public class UserDetailsImpl implements UserDetails {
                 authorities.add(new SimpleGrantedAuthority(permission.getName()));
             });
         });
+
+        // 2. Lấy quyền RIÊNG LẺ
+        if (user.getExtraPermissions() != null) {
+            user.getExtraPermissions().forEach(permission -> {
+                // Thêm trực tiếp vào túi
+                authorities.add(new SimpleGrantedAuthority(permission.getName()));
+            });
+        }
         return authorities;
     }
 

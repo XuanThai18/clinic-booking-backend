@@ -78,6 +78,16 @@ public class User {
     @JsonManagedReference("user-roles") // Đặt tên định danh
     private Set<Role> roles = new HashSet<>();
 
+    // --- THÊM MỚI: QUYỀN RIÊNG LẺ (EXTRA PERMISSIONS) ---
+    // Đây là các quyền được cấp thêm ngoài quyền của Role
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "users_permissions", // Bảng phụ mới
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private Set<Permission> extraPermissions = new HashSet<>();
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("user-doctor")
     private Doctor doctor; // Một User có thể có một hồ sơ Doctor

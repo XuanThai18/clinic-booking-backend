@@ -17,6 +17,7 @@ public class DoctorResponse {
     private String academicDegree;
     private BigDecimal price;
     private String phoneNumber;
+    private String address;
     private Gender gender;
     private LocalDate birthday;
     private String image; // Avatar

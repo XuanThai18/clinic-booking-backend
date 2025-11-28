@@ -20,4 +20,6 @@ public interface IUserService {
     void deleteUser(Long id);
     // Hàm tìm kiếm nâng cao
     UserResponsePage getAllUsersWithSearch(String keyword, String roleName, Pageable pageable);
+    void grantPermissionToUser(Long userId, String permissionName);
+    void revokePermissionFromUser(Long userId, String permissionName);
 }

@@ -77,7 +77,7 @@ public class DataSeeder implements CommandLineRunner {
         // Role ADMIN: Quản lý vận hành (nhưng không quản lý User cấp cao)
         createRoleIfNotFound("ROLE_ADMIN", Set.of(
                 // User
-                userView, userCreate, userEdit,
+//                userView, userCreate, userEdit,
                 // Không có userDelete và userManageRoles
 
                 // Specialty

@@ -253,6 +253,7 @@ public class DoctorServiceImpl implements IDoctorService {
         dto.setFullName(doctor.getUser().getFullName());
         dto.setEmail(doctor.getUser().getEmail());
         dto.setPhoneNumber(doctor.getUser().getPhoneNumber());
+        dto.setAddress(doctor.getUser().getAddress());
 
         // --- MAP THÊM 2 TRƯỜNG NÀY TỪ USER ---
         dto.setGender(doctor.getUser().getGender());

@@ -21,4 +21,5 @@ public class UserResponse {
     private boolean isActive;
     private LocalDateTime createdAt;
     private Set<String> roles; // Chỉ trả về tên của các role
+    private Set<String> extraPermissions;
 }

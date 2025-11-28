@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.CreateUserRequest;
 import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.dto.response.UserResponsePage;
+import vn.xuanthai.clinic.booking.entity.Permission;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
+import vn.xuanthai.clinic.booking.repository.PermissionRepository;
 import vn.xuanthai.clinic.booking.service.IUserService;
 
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class AdminController {
 
     private final IUserService userService;
+    private final PermissionRepository permissionRepository;
 
     @PostMapping("/users")
     @PreAuthorize("hasAuthority('USER_CREATE')")
@@ -75,6 +78,32 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return ResponseEntity.ok(userService.getAllUsersWithSearch(keyword, role, pageable));
+    }
+
+    // API Cấp thêm quyền lẻ
+    @PostMapping("/users/{id}/permissions")
+    @PreAuthorize("hasAuthority('USER_MANAGE_ROLES')") // Quyền cao nhất
+    public ResponseEntity<String> grantPermission(@PathVariable Long id, @RequestParam String permissionName) {
+        userService.grantPermissionToUser(id, permissionName);
+        return ResponseEntity.ok("Đã cấp thêm quyền " + permissionName + " cho user.");
+    }
+
+    // API Thu hồi quyền lẻ
+    @DeleteMapping("/users/{id}/permissions")
+    @PreAuthorize("hasAuthority('USER_MANAGE_ROLES')")
+    public ResponseEntity<String> revokePermission(@PathVariable Long id, @RequestParam String permissionName) {
+        userService.revokePermissionFromUser(id, permissionName);
+        return ResponseEntity.ok("Đã thu hồi quyền " + permissionName);
+    }
+
+    @GetMapping("/permissions")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')") // Chỉ Super Admin mới cần lấy list này
+    public ResponseEntity<List<String>> getAllPermissions() {
+        // Em có thể gọi qua service, hoặc gọi nhanh repository ở đây nếu lười (tốt nhất là qua service)
+        // Giả sử em inject PermissionRepository vào đây
+        return ResponseEntity.ok(permissionRepository.findAll().stream()
+                .map(Permission::getName)
+                .collect(Collectors.toList()));
     }
 
     // Phương thức trợ giúp để thực hiện việc ánh xạ

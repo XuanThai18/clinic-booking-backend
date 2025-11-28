@@ -39,4 +39,6 @@ public class CreateUserRequest {
     // Đây là phần quan trọng nhất: Admin sẽ gửi lên một danh sách TÊN của các role
     @NotEmpty(message = "Người dùng phải có ít nhất một vai trò")
     private Set<String> roles; // Ví dụ: ["ROLE_ADMIN", "ROLE_DOCTOR"]
+
+    private Set<String> extraPermissions;
 }
