@@ -37,6 +37,12 @@ public class Appointment {
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
+    @Column(name = "diagnosis", columnDefinition = "TEXT")
+    private String diagnosis; // Chẩn đoán
+
+    @Column(name = "prescription", columnDefinition = "TEXT")
+    private String prescription; // Đơn thuốc / Ghi chú
+
     @Enumerated(EnumType.STRING) // Quan trọng: Báo cho JPA lưu tên của Enum (ví dụ: "CONFIRMED")
     @Column(name = "status", length = 20, nullable = false)
     private AppointmentStatus status;

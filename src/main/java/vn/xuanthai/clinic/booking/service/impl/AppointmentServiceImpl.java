@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
+import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.entity.Appointment;
 import vn.xuanthai.clinic.booking.entity.Doctor;
@@ -16,6 +17,7 @@ import vn.xuanthai.clinic.booking.enums.ScheduleStatus;
 import vn.xuanthai.clinic.booking.exception.BadRequestException;
 import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.AppointmentRepository;
+import vn.xuanthai.clinic.booking.repository.DoctorRepository;
 import vn.xuanthai.clinic.booking.repository.ScheduleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.service.IAppointmentService;
@@ -30,6 +32,8 @@ public class AppointmentServiceImpl implements IAppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
+    private final UserContextService userContextService;
+    private final DoctorRepository doctorRepository;
 
     @Override
     @Transactional // Rất quan trọng! Đảm bảo CẢ HAI thao tác cùng thành công
@@ -70,102 +74,178 @@ public class AppointmentServiceImpl implements IAppointmentService {
     }
 
     @Override
-    public List<AppointmentResponse> getMyAppointments(Authentication authentication) {
-        String currentUsername = authentication.getName();
-        User patient = userRepository.findByEmail(currentUsername)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản."));
+    public List<AppointmentResponse> getMyAppointments() {
+        // 1. Dùng trợ lý UserContextService để lấy người đang đăng nhập
+        User currentUser = userContextService.getCurrentUser();
 
-        // Cần thêm phương thức này vào AppointmentRepository
-        return appointmentRepository.findByPatientId(patient.getId()).stream()
+        // 2. Gọi Repository tìm lịch hẹn theo ID bệnh nhân
+        List<Appointment> appointments = appointmentRepository.findAllByPatientId(currentUser.getId());
+
+        // 3. Map sang DTO
+        return appointments.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // ... Inject DoctorRepository vào
+
+    @Override
+    public List<AppointmentResponse> getAllAppointmentsForDoctor() {
+        // 1. Lấy User hiện tại
+        User currentUser = userContextService.getCurrentUser();
+
+        // 2. Tìm hồ sơ Bác sĩ của User này
+        Doctor doctor = doctorRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải là bác sĩ!"));
+
+        // 3. Lấy danh sách lịch hẹn của bác sĩ này
+        List<Appointment> appointments = appointmentRepository.findAllBySchedule_Doctor_Id(doctor.getId());
+
+        return appointments.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<AppointmentResponse> getAllAppointments() {
-        return appointmentRepository.findAll().stream()
+        // 1. Kiểm tra xem người gọi có phải là Admin Chi Nhánh không
+        Long currentClinicId = userContextService.getCurrentClinicId();
+
+        List<Appointment> appointments;
+
+        if (currentClinicId != null) {
+            // TRƯỜNG HỢP: ADMIN CHI NHÁNH
+            // Chỉ lấy lịch hẹn thuộc phòng khám của họ
+            appointments = appointmentRepository.findAllBySchedule_Doctor_Clinic_Id(currentClinicId);
+        } else {
+            // TRƯỜNG HỢP: SUPER ADMIN
+            // Lấy tất cả
+            appointments = appointmentRepository.findAll();
+        }
+
+        return appointments.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional // Quan trọng để đảm bảo dữ liệu nhất quán
+    @Transactional
     public void updateStatus(Long appointmentId, AppointmentStatus newStatus) {
         // 1. Tìm lịch hẹn
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn: " + appointmentId));
 
-        // 2. Cập nhật trạng thái lịch hẹn
-        appointment.setStatus(newStatus);
-        appointmentRepository.save(appointment);
-
-        // 3. LOGIC ĐẶC BIỆT:
-        // Nếu Admin chuyển trạng thái thành CANCELLED (Hủy)
-        // -> Phải trả lại khung giờ (Schedule) thành AVAILABLE (Còn trống) để người khác đặt
-        if (newStatus == AppointmentStatus.CANCELLED) {
-            Schedule schedule = appointment.getSchedule();
-            schedule.setStatus(ScheduleStatus.AVAILABLE);
-            scheduleRepository.save(schedule);
+        // 2. BẢO MẬT: Kiểm tra quyền Clinic Admin (Chặn sửa chéo phòng khám)
+        Long currentClinicId = userContextService.getCurrentClinicId();
+        if (currentClinicId != null) {
+            Long appointmentClinicId = appointment.getSchedule().getDoctor().getClinic().getId();
+            if (!appointmentClinicId.equals(currentClinicId)) {
+                throw new AccessDeniedException("Bạn không có quyền chỉnh sửa lịch hẹn của phòng khám khác!");
+            }
         }
 
-        // (Ngược lại, nếu Admin khôi phục lại lịch hủy -> Có thể cần check xem Schedule còn trống không, nhưng tạm thời ta chỉ xử lý luồng Hủy đơn giản).
+        // 3. Xử lý logic theo trạng thái
+        if (newStatus == AppointmentStatus.CANCELLED) {
+            // Gọi hàm chung để xử lý hủy
+            processCancellation(appointment);
+        } else {
+            // Các trạng thái khác (CONFIRMED, COMPLETED...)
+            appointment.setStatus(newStatus);
+            appointmentRepository.save(appointment);
+        }
     }
 
-    /**
-     * Hủy một lịch hẹn.
-     * Chỉ có chủ nhân của lịch hẹn (Patient) hoặc Admin/SuperAdmin mới có quyền này.
-     * Khi hủy, lịch hẹn sẽ bị CANCELED và khung giờ (Schedule) sẽ được trả về AVAILABLE.
-     */
     @Override
-    @Transactional // Rất quan trọng! Đảm bảo cả 2 bảng được cập nhật cùng nhau
+    @Transactional
     public AppointmentResponse cancelAppointment(Long appointmentId, Authentication authentication) {
-
-        // 1. Tìm lịch hẹn (Appointment) cần hủy
+        // 1. Tìm lịch hẹn
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn với ID: " + appointmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn: " + appointmentId));
 
-        // 2. Lấy thông tin người dùng đang đăng nhập
-        String currentUsername = authentication.getName(); // Đây là email
-        User currentUser = userRepository.findByEmail(currentUsername)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản người dùng."));
+        // 2. Lấy User hiện tại
+        User currentUser = userContextService.getCurrentUser();
 
-        // 3. KIỂM TRA QUYỀN HẠN (Authorization)
-        // Kiểm tra xem người này có phải là Admin/SuperAdmin không
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN") ||
-                        auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
-
-        // Kiểm tra xem người này có phải là chủ nhân (Patient) của lịch hẹn không
+        // 3. KIỂM TRA QUYỀN (Owner hoặc Admin/Staff có quyền Cancel)
         boolean isOwner = appointment.getPatient().getId().equals(currentUser.getId());
 
-        // Nếu không phải Admin VÀ cũng không phải Chủ nhân -> Ném lỗi 403 Forbidden
-        if (!isAdmin && !isOwner) {
+        // Kiểm tra quyền dựa trên Authority (thay vì fix cứng Role)
+        boolean hasCancelPermission = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("APPOINTMENT_CANCEL") ||
+                        a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+        if (!isOwner && !hasCancelPermission) {
             throw new AccessDeniedException("Bạn không có quyền hủy lịch hẹn này.");
         }
 
-        // 4. KIỂM TRA NGHIỆP VỤ (Business Logic)
-        // Kiểm tra xem lịch hẹn đã bị hủy hoặc đã hoàn thành chưa
+        // 4. Gọi hàm chung để xử lý hủy
+        processCancellation(appointment);
+
+        return mapToResponse(appointment);
+    }
+
+    // --- HÀM TRỢ GIÚP (PRIVATE) ---
+    // Logic hủy lịch được gom vào đây để tái sử dụng
+    private void processCancellation(Appointment appointment) {
+        // Validate logic nghiệp vụ
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
             throw new BadRequestException("Lịch hẹn này đã được hủy trước đó.");
         }
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new BadRequestException("Không thể hủy lịch hẹn đã hoàn thành.");
+            throw new BadRequestException("Không thể hủy lịch hẹn đã hoàn thành (đã khám xong).");
         }
 
-        // 5. THỰC THI LOGIC HỦY LỊCH (Transaction)
-        // 5.1. Đổi trạng thái lịch hẹn
+        // 1. Cập nhật trạng thái lịch hẹn
         appointment.setStatus(AppointmentStatus.CANCELLED);
-        Appointment savedAppointment = appointmentRepository.save(appointment);
+        appointmentRepository.save(appointment);
 
-        // 5.2. "Mở khóa" lại khung giờ (Schedule)
+        // 2. Trả lại khung giờ (Schedule) thành AVAILABLE
         Schedule schedule = appointment.getSchedule();
         schedule.setStatus(ScheduleStatus.AVAILABLE);
         scheduleRepository.save(schedule);
 
-        // (TODO: Gửi email thông báo hủy lịch cho bác sĩ và bệnh nhân)
+        // (Tại đây có thể thêm logic gửi email thông báo hủy)
+    }
 
-        // 6. Trả về thông tin lịch hẹn đã được cập nhật
-        return mapToResponse(savedAppointment);
+    @Override
+    @Transactional
+    public void completeAppointment(Long appointmentId, CompletionRequest request) {
+        // 1. Tìm lịch hẹn
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn: " + appointmentId));
+
+        // 2. KIỂM TRA QUYỀN (Quan trọng)
+        // Chỉ Bác sĩ phụ trách lịch hẹn này (hoặc Admin) mới được phép nhập kết quả
+        User currentUser = userContextService.getCurrentUser();
+
+        // Lấy ID của bác sĩ trong lịch hẹn
+        Long doctorUserId = appointment.getSchedule().getDoctor().getUser().getId();
+
+        // Kiểm tra: Người đang đăng nhập có phải là bác sĩ của lịch này không?
+        // (Hoặc có thể check thêm quyền ROLE_ADMIN nếu muốn cho phép Admin nhập hộ)
+        boolean isMyPatient = currentUser.getId().equals(doctorUserId);
+
+        if (!isMyPatient) {
+            // Có thể check thêm quyền Admin ở đây nếu cần
+            throw new AccessDeniedException("Bạn không phải là bác sĩ phụ trách ca này.");
+        }
+
+        // 3. Kiểm tra trạng thái hợp lệ
+        // Chỉ được complete khi trạng thái đang là CONFIRMED (Đã xác nhận)
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw new BadRequestException("Lịch hẹn phải được xác nhận trước khi khám.");
+        }
+
+        // 4. Cập nhật thông tin
+        appointment.setDiagnosis(request.getDiagnosis());
+        appointment.setPrescription(request.getPrescription());
+
+        // 5. Đổi trạng thái thành COMPLETED
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+
+        // 6. Lưu vào CSDL
+        appointmentRepository.save(appointment);
+
+        // (Có thể gửi email đơn thuốc cho bệnh nhân ở đây)
     }
 
     // --- Phương thức trợ giúp ---

@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
+import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.enums.AppointmentStatus;
 import vn.xuanthai.clinic.booking.service.IAppointmentService;
@@ -33,10 +34,30 @@ public class AppointmentController {
         return new ResponseEntity<>(createdAppointment, HttpStatus.CREATED);
     }
 
+    // 1. API Cho Bệnh Nhân (Xem lịch sử khám của mình)
     @GetMapping("/appointments/my-history")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<List<AppointmentResponse>> getMyAppointmentHistory(Authentication authentication) {
-        return ResponseEntity.ok(appointmentService.getMyAppointments(authentication));
+    public ResponseEntity<List<AppointmentResponse>> getMyAppointmentHistory() {
+        // Gọi hàm tìm theo PatientId
+        return ResponseEntity.ok(appointmentService.getMyAppointments());
+    }
+
+    // 2. API Cho Bác Sĩ (Xem danh sách bệnh nhân đăng ký khám mình)
+    @GetMapping("/doctor/appointments")
+    @PreAuthorize("hasAuthority('DOCTOR_MANAGE_SCHEDULE')")
+    public ResponseEntity<List<AppointmentResponse>> getDoctorAppointments() {
+        return ResponseEntity.ok(appointmentService.getAllAppointmentsForDoctor());
+    }
+
+    // API Dành cho Bác sĩ: Hoàn tất khám bệnh
+    @PutMapping("/doctor/appointments/{id}/complete")
+    @PreAuthorize("hasAuthority('DOCTOR_MANAGE_SCHEDULE')") // Yêu cầu quyền bác sĩ
+    public ResponseEntity<Void> completeAppointment(
+            @PathVariable Long id,
+            @Valid @RequestBody CompletionRequest request) { // Dùng DTO và @Valid
+
+        appointmentService.completeAppointment(id, request);
+        return ResponseEntity.ok().build();
     }
 
     // (Em có thể tự viết API cho phép Bệnh nhân hủy lịch)

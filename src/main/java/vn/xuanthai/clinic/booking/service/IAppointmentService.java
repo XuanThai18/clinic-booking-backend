@@ -2,6 +2,7 @@ package vn.xuanthai.clinic.booking.service;
 
 import org.springframework.security.core.Authentication;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
+import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.enums.AppointmentStatus;
 
@@ -15,17 +16,14 @@ public interface IAppointmentService {
      */
     AppointmentResponse createAppointment(AppointmentRequest request, Authentication authentication);
 
-    /**
-     * Bệnh nhân xem lịch sử đặt lịch của chính mình.
-     */
-    List<AppointmentResponse> getMyAppointments(Authentication authentication);
-
-    /**
-     * Admin xem tất cả các lịch hẹn.
-     */
-    List<AppointmentResponse> getAllAppointments();
+    List<AppointmentResponse> getMyAppointments(); // Cho bệnh nhân
+    List<AppointmentResponse> getAllAppointmentsForDoctor(); // Cho bác sĩ (Nhớ thêm dòng này)
+    List<AppointmentResponse> getAllAppointments(); // Cho Admin
 
     void updateStatus(Long appointmentId, AppointmentStatus status);
+
+    // Hàm mới: Hoàn thành cuộc hẹn và lưu kết quả
+    void completeAppointment(Long appointmentId, CompletionRequest request);
 
     /**
      * Bệnh nhân (hoặc Admin) hủy một lịch hẹn.
