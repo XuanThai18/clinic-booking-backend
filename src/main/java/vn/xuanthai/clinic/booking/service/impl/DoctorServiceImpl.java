@@ -16,6 +16,7 @@ import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.*;
 import vn.xuanthai.clinic.booking.service.IDoctorService;
 import vn.xuanthai.clinic.booking.service.IFileService;
+import vn.xuanthai.clinic.booking.service.impl.UserContextService;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ public class DoctorServiceImpl implements IDoctorService {
     private final IFileService fileService;
     private final RoleRepository roleRepository; // Cần thêm cái này để tìm ROLE_DOCTOR
     private final PasswordEncoder passwordEncoder; // Cần thêm cái này để mã hóa mật khẩu
+    private final UserContextService userContextService;
 
     @Override
     @Transactional
@@ -41,36 +43,43 @@ public class DoctorServiceImpl implements IDoctorService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + request.getUserId()));
 
-        // --- BỔ SUNG 1: KIỂM TRA XEM ĐÃ CÓ HỒ SƠ CHƯA ---
-        // (Em cần viết hàm findByUserId trong DoctorRepository trước nhé)
+        // 2. Kiểm tra trùng lặp
         if (doctorRepository.findByUserId(request.getUserId()).isPresent()) {
             throw new BadRequestException("Người dùng này đã có hồ sơ bác sĩ rồi. Vui lòng dùng chức năng Sửa.");
         }
-        // ------------------------------------------------
 
-        // --- BƯỚC CŨ: CẬP NHẬT THÔNG TIN CÁ NHÂN ---
+        // 3. --- LOGIC PHÂN QUYỀN PHÒNG KHÁM (MỚI) ---
+        // Nếu người tạo là Clinic Admin -> Ép buộc bác sĩ mới phải thuộc phòng khám đó
+        Long currentClinicId = userContextService.getCurrentClinicId();
+        if (currentClinicId != null) {
+            request.setClinicId(currentClinicId);
+        }
+        // --------------------------------------------
+
+        // 4. Cập nhật thông tin cá nhân vào User
         if (request.getGender() != null) user.setGender(request.getGender());
         if (request.getBirthday() != null) user.setBirthday(request.getBirthday());
 
-        // --- BỔ SUNG 2: TỰ ĐỘNG CẤP QUYỀN ROLE_DOCTOR (NẾU CHƯA CÓ) ---
+        user.setClinicId(request.getClinicId());
+
+        // 5. Tự động cấp quyền ROLE_DOCTOR
         boolean hasDoctorRole = user.getRoles().stream()
                 .anyMatch(role -> role.getName().equals("ROLE_DOCTOR"));
 
         if (!hasDoctorRole) {
             Role doctorRole = roleRepository.findByName("ROLE_DOCTOR")
                     .orElseThrow(() -> new ResourceNotFoundException("Lỗi hệ thống: Không tìm thấy ROLE_DOCTOR"));
-            // Vì user.getRoles() trả về Set, ta có thể add thêm vào
             user.getRoles().add(doctorRole);
         }
-        // -------------------------------------------------------------
 
-        // 2. Tìm Chuyên khoa và Phòng khám
+        // 6. Tìm Chuyên khoa và Phòng khám (Dùng ID đã được xử lý ở bước 3)
         Specialty specialty = specialtyRepository.findById(request.getSpecialtyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Chuyên khoa"));
+
         Clinic clinic = clinicRepository.findById(request.getClinicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phòng khám"));
 
-        // 3. Tạo Entity Doctor mới (Giữ nguyên code của em)
+        // 7. Tạo Entity Doctor mới
         Doctor newDoctor = new Doctor();
         newDoctor.setUser(user);
         newDoctor.setSpecialty(specialty);
@@ -81,14 +90,22 @@ public class DoctorServiceImpl implements IDoctorService {
         newDoctor.setImage(request.getImage());
         newDoctor.setOtherImages(request.getOtherImages());
 
-        // 4. Lưu
+        // 8. Lưu
         Doctor savedDoctor = doctorRepository.save(newDoctor);
         return mapToDoctorResponse(savedDoctor);
     }
 
     @Override
-    @Transactional // CỰC KỲ QUAN TRỌNG: Nếu bước 2 lỗi, bước 1 (tạo user) sẽ tự động rollback
+    @Transactional
     public DoctorResponse registerDoctor(DoctorRegistrationRequest request) {
+
+        // 0. --- LOGIC PHÂN QUYỀN PHÒNG KHÁM (MỚI) ---
+        // Xử lý ngay từ đầu để đảm bảo tính nhất quán
+        Long currentClinicId = userContextService.getCurrentClinicId();
+        if (currentClinicId != null) {
+            request.setClinicId(currentClinicId);
+        }
+        // --------------------------------------------
 
         // --- BƯỚC 1: TẠO TÀI KHOẢN USER ---
 
@@ -101,25 +118,25 @@ public class DoctorServiceImpl implements IDoctorService {
         User newUser = new User();
         newUser.setFullName(request.getFullName());
         newUser.setEmail(request.getEmail());
-        newUser.setPassword(passwordEncoder.encode(request.getPassword())); // Mã hóa pass
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         newUser.setPhoneNumber(request.getPhoneNumber());
         newUser.setAddress(request.getAddress());
         newUser.setGender(request.getGender());
         newUser.setBirthday(request.getBirthday());
+        newUser.setClinicId(request.getClinicId());
         newUser.setActive(true);
 
         // 1.3. Gán quyền Bác sĩ
         Role doctorRole = roleRepository.findByName("ROLE_DOCTOR")
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò DOCTOR trong hệ thống."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò DOCTOR."));
         newUser.setRoles(java.util.Set.of(doctorRole));
 
-        // 1.4. Lưu User (Để lấy ID cho bước sau)
+        // 1.4. Lưu User
         User savedUser = userRepository.save(newUser);
-
 
         // --- BƯỚC 2: TẠO HỒ SƠ BÁC SĨ ---
 
-        // 2.1. Tìm Chuyên khoa và Phòng khám
+        // 2.1. Tìm Chuyên khoa và Phòng khám (Dùng ID đã xử lý ở bước 0)
         Specialty specialty = specialtyRepository.findById(request.getSpecialtyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Chuyên khoa"));
         Clinic clinic = clinicRepository.findById(request.getClinicId())
@@ -127,7 +144,7 @@ public class DoctorServiceImpl implements IDoctorService {
 
         // 2.2. Tạo Doctor Entity
         Doctor newDoctor = new Doctor();
-        newDoctor.setUser(savedUser); // Liên kết với User vừa tạo
+        newDoctor.setUser(savedUser);
         newDoctor.setSpecialty(specialty);
         newDoctor.setClinic(clinic);
         newDoctor.setDescription(request.getDescription());

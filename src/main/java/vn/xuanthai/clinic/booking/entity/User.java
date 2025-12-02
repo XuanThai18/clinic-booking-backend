@@ -28,6 +28,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "clinic_id")
+    private Long clinicId; // Null nếu là Super Admin hoặc Bệnh nhân tự do
+
     @Column(name = "email", length = 255, nullable = false, unique = true)
     private String email;
 

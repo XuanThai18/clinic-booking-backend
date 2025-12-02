@@ -19,6 +19,7 @@ public class UserResponse {
     private LocalDate birthday;
     @JsonProperty("isActive")
     private boolean isActive;
+    private Long clinicId;
     private LocalDateTime createdAt;
     private Set<String> roles; // Chỉ trả về tên của các role
     private Set<String> extraPermissions;

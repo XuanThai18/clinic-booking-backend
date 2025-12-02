@@ -153,6 +153,7 @@ public class AuthServiceImpl implements IAuthService {
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setAddress(user.getAddress());
         dto.setActive(user.isActive());
+        dto.setClinicId(user.getClinicId());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
         return dto;

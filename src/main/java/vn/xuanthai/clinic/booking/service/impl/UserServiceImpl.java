@@ -67,6 +67,14 @@ public class UserServiceImpl implements IUserService {
         newUser.setBirthday(request.getBirthday()); // Lưu ngày sinh
         newUser.setActive(true);
 
+        if (request.getClinicId() != null) {
+            newUser.setClinicId(request.getClinicId());
+        } else {
+            // Nếu không gửi lên (hoặc muốn xóa), có thể set null
+            // Nhưng thường với ROLE_ADMIN thì không nên null
+            newUser.setClinicId(null);
+        }
+
         // 4. Gán các vai trò đã tìm thấy
         newUser.setRoles(foundRoles);
 
@@ -136,6 +144,12 @@ public class UserServiceImpl implements IUserService {
                             .orElseThrow(() -> new BadRequestException("Role not found")))
                     .collect(Collectors.toSet());
             user.setRoles(newRoles);
+        }
+
+        if (request.getClinicId() != null) {
+            user.setClinicId(request.getClinicId());
+        } else {
+             user.setClinicId(null);
         }
 
         // 2. --- UPDATE EXTRA PERMISSIONS (MỚI) ---
@@ -272,7 +286,7 @@ public class UserServiceImpl implements IUserService {
         userRepository.save(user);
     }
 
-    // --- HÀM TRỢ GIÚP (Copy từ Controller vào đây để dùng chung) ---
+    // --- HÀM TRỢ GIÚP  ---
     private UserResponse mapToUserResponse(User user) {
         UserResponse dto = new UserResponse();
         dto.setId(user.getId());
@@ -284,6 +298,7 @@ public class UserServiceImpl implements IUserService {
         dto.setBirthday(user.getBirthday());
         dto.setActive(user.isActive());
         dto.setCreatedAt(user.getCreatedAt());
+        dto.setClinicId(user.getClinicId());
         // Lấy danh sách tên các role
         dto.setRoles(user.getRoles().stream()
                 .map(Role::getName)
