@@ -17,6 +17,9 @@ public interface IDoctorService {
     // Lấy danh sách bác sĩ (có thể thêm phân trang, lọc sau)
     List<DoctorResponse> getAllDoctors();
 
+    // (Dành cho Public - Khách)
+    List<DoctorResponse> getAllPublicDoctors();
+
     // Hàm lấy hồ sơ của chính bác sĩ đang đăng nhập
     DoctorResponse getMyDoctorProfile();
 

@@ -53,11 +53,19 @@ public class DoctorController {
         return ResponseEntity.noContent().build();
     }
 
+    // API DÀNH CHO ADMIN (Có phân quyền dữ liệu)
+    @GetMapping("/admin/doctors")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<DoctorResponse>> getAllDoctorsForAdmin() {
+        // Hàm getAllDoctors trong Service giờ đã thông minh, tự biết lọc
+        return ResponseEntity.ok(doctorService.getAllDoctors());
+    }
+
     // ----- CÁC API CÔNG KHAI (CHO BỆNH NHÂN) -----
 
     @GetMapping("/public/doctors")
-    public ResponseEntity<List<DoctorResponse>> getAllDoctors() {
-        return ResponseEntity.ok(doctorService.getAllDoctors());
+    public ResponseEntity<List<DoctorResponse>> getAllDoctorsForPublic() {
+        return ResponseEntity.ok(doctorService.getAllPublicDoctors());
     }
 
     @GetMapping("/public/doctors/{id}")

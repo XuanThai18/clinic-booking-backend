@@ -20,6 +20,10 @@ public class DoctorCreateRequest {
     @NotNull(message = "ID phòng khám không được để trống")
     private Long clinicId;
 
+    private String fullName;
+    private String email;
+    private String phoneNumber;
+    private String address;
     private String description;
     private String academicDegree;
     private BigDecimal price;

@@ -169,6 +169,30 @@ public class DoctorServiceImpl implements IDoctorService {
 
     @Override
     public List<DoctorResponse> getAllDoctors() {
+        // 1. Kiểm tra xem người gọi có phải là Clinic Admin không
+        Long currentClinicId = userContextService.getCurrentClinicId();
+
+        List<Doctor> doctors;
+
+        if (currentClinicId != null) {
+            // TRƯỜNG HỢP: ADMIN CHI NHÁNH
+            // Chỉ lấy bác sĩ thuộc phòng khám đó
+            doctors = doctorRepository.findAllByClinicId(currentClinicId);
+        } else {
+            // TRƯỜNG HỢP: SUPER ADMIN (hoặc khách vãng lai không đăng nhập)
+            // Lấy tất cả
+            doctors = doctorRepository.findAll();
+        }
+
+        // 2. Chuyển đổi sang DTO
+        return doctors.stream()
+                .map(this::mapToDoctorResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DoctorResponse> getAllPublicDoctors() {
+        // Đơn giản là lấy tất cả từ DB
         return doctorRepository.findAll().stream()
                 .map(this::mapToDoctorResponse)
                 .collect(Collectors.toList());
@@ -210,6 +234,9 @@ public class DoctorServiceImpl implements IDoctorService {
 
         // 2. Cập nhật thông tin cá nhân vào User (Nếu có thay đổi)
         User user = existingDoctor.getUser();
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
         if (request.getGender() != null) user.setGender(request.getGender());
         if (request.getBirthday() != null) user.setBirthday(request.getBirthday());
 
