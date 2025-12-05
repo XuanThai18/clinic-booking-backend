@@ -250,26 +250,58 @@ public class AppointmentServiceImpl implements IAppointmentService {
 
     // --- Phương thức trợ giúp ---
     private AppointmentResponse mapToResponse(Appointment app) {
+        // 1. Khởi tạo DTO rỗng
         AppointmentResponse dto = new AppointmentResponse();
+
+        // 2. Map các thông tin cơ bản của Lịch hẹn
         dto.setId(app.getId());
         dto.setCreatedAt(app.getCreatedAt());
         dto.setStatus(app.getStatus());
         dto.setReason(app.getReason());
 
-        // Lấy thông tin Bệnh nhân
-        dto.setPatientId(app.getPatient().getId());
-        dto.setPatientName(app.getPatient().getFullName());
+        // Map thông tin kết quả khám (nếu có)
+        dto.setDiagnosis(app.getDiagnosis());
+        dto.setPrescription(app.getPrescription());
 
-        // Lấy thông tin từ Schedule (là nơi chứa thông tin Doctor và Clinic)
+        // 3. Map thông tin Bệnh nhân (Patient)
+        // Lưu ý: Patient là một User entity
+        User patient = app.getPatient();
+        if (patient != null) {
+            dto.setPatientId(patient.getId());
+            dto.setPatientName(patient.getFullName());
+            dto.setPatientPhone(patient.getPhoneNumber()); // Thêm SĐT để bác sĩ tiện liên hệ
+            // Có thể thêm patientGender, patientBirthday nếu cần hiển thị chi tiết
+        }
+
+        // 4. Map thông tin từ Khung giờ (Schedule) -> Bác sĩ -> Phòng khám
         Schedule schedule = app.getSchedule();
-        dto.setAppointmentDate(schedule.getDate());
-        dto.setAppointmentTimeSlot(schedule.getTimeSlot());
+        if (schedule != null) {
+            // Map ngày giờ khám
+            dto.setAppointmentDate(schedule.getDate());
+            dto.setAppointmentTimeSlot(schedule.getTimeSlot());
 
-        Doctor doctor = schedule.getDoctor();
-        dto.setDoctorId(doctor.getId());
-        dto.setDoctorName(doctor.getUser().getFullName());
-        dto.setClinicName(doctor.getClinic().getName());
-        dto.setSpecialtyName(doctor.getSpecialty().getName());
+            Doctor doctor = schedule.getDoctor();
+            if (doctor != null) {
+                // Map thông tin Bác sĩ
+                dto.setDoctorId(doctor.getId());
+
+                // Map thông tin User của Bác sĩ (Tên, Email...)
+                if (doctor.getUser() != null) {
+                    dto.setDoctorName(doctor.getUser().getFullName());
+                }
+
+                // Map thông tin Chuyên khoa
+                if (doctor.getSpecialty() != null) {
+                    dto.setSpecialtyName(doctor.getSpecialty().getName());
+                }
+
+                // Map thông tin Phòng khám
+                if (doctor.getClinic() != null) {
+                    dto.setClinicName(doctor.getClinic().getName());
+                    // Có thể thêm clinicAddress nếu cần hiển thị địa chỉ khám
+                }
+            }
+        }
 
         return dto;
     }

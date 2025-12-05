@@ -28,4 +28,9 @@ public class AppointmentResponse {
     // Thông tin lịch hẹn
     private LocalDate appointmentDate;
     private String appointmentTimeSlot;
+
+    private String diagnosis;    // Chẩn đoán
+    private String prescription; // Đơn thuốc/Ghi chú
+
+    private String patientPhone;
 }

@@ -23,4 +23,6 @@ public interface IScheduleService {
      * (Nâng cao) Bệnh nhân xem các khung giờ CÒN TRỐNG của bác sĩ.
      */
     List<ScheduleResponse> getAvailableSchedulesByDoctorAndDate(Long doctorId, LocalDate date);
+
+    List<String> getWorkingDays(int year, int month);
 }
