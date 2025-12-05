@@ -32,10 +32,4 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
-
-    @PutMapping("/me") // Endpoint: PUT /api/users/me
-    @PreAuthorize("isAuthenticated()") // Ai đăng nhập rồi cũng dùng được
-    public ResponseEntity<UserResponse> updateMyProfile(@RequestBody UserUpdateRequest request) {
-        return ResponseEntity.ok(userService.updateMyProfile(request));
-    }
 }

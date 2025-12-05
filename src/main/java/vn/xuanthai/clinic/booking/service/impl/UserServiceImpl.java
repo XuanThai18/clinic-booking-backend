@@ -42,6 +42,7 @@ public class UserServiceImpl implements IUserService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordHistoryRepository passwordHistoryRepository;
     private final PermissionRepository permissionRepository;
+    private final UserContextService userContextService;
 
     @Override
     public User createUserByAdmin(CreateUserRequest request) {
@@ -100,21 +101,22 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    @Transactional
     public UserResponse updateMyProfile(UserUpdateRequest request) {
-        // 1. Lấy user đang đăng nhập từ SecurityContext
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        // Lấy người dùng đang đăng nhập (nhờ UserContextService thần thánh)
+        User currentUser = userContextService.getCurrentUser();
 
-        // 2. Cập nhật thông tin (chỉ cập nhật nếu client có gửi giá trị lên)
+        // Cập nhật thông tin (chỉ cập nhật nếu có gửi lên)
         if (request.getFullName() != null) currentUser.setFullName(request.getFullName());
         if (request.getPhoneNumber() != null) currentUser.setPhoneNumber(request.getPhoneNumber());
         if (request.getAddress() != null) currentUser.setAddress(request.getAddress());
         if (request.getGender() != null) currentUser.setGender(request.getGender());
         if (request.getBirthday() != null) currentUser.setBirthday(request.getBirthday());
 
-        // 3. Lưu và trả về DTO
+        // Lưu vào DB
         User updatedUser = userRepository.save(currentUser);
+
+        // Trả về DTO
         return mapToUserResponse(updatedUser);
     }
 
