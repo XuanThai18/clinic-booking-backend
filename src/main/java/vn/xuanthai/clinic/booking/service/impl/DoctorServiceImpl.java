@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.xuanthai.clinic.booking.dto.request.DoctorCreateRequest;
 import vn.xuanthai.clinic.booking.dto.request.DoctorRegistrationRequest;
+import vn.xuanthai.clinic.booking.dto.request.DoctorSelfUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.ClinicResponse;
 import vn.xuanthai.clinic.booking.dto.response.DoctorResponse;
 import vn.xuanthai.clinic.booking.dto.response.SpecialtyResponse;
@@ -216,6 +217,23 @@ public class DoctorServiceImpl implements IDoctorService {
 
         // 4. Ánh xạ sang DTO và trả về
         return mapToDoctorResponse(doctor);
+    }
+
+    @Override
+    @Transactional
+    public DoctorResponse updateMyDoctorProfile(DoctorSelfUpdateRequest request) {
+        // 1. Lấy bác sĩ đang đăng nhập
+        User currentUser = userContextService.getCurrentUser();
+        Doctor doctor = doctorRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ bác sĩ không tồn tại"));
+
+        // 2. Chỉ cập nhật các trường cho phép
+        if (request.getDescription() != null) doctor.setDescription(request.getDescription());
+        if (request.getAcademicDegree() != null) doctor.setAcademicDegree(request.getAcademicDegree());
+        if (request.getImage() != null) doctor.setImage(request.getImage());
+        if (request.getOtherImages() != null) doctor.setOtherImages(request.getOtherImages());
+
+        return mapToDoctorResponse(doctorRepository.save(doctor));
     }
 
     @Override

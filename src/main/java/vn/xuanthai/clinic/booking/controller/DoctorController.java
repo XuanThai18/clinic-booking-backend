@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.DoctorCreateRequest;
 import vn.xuanthai.clinic.booking.dto.request.DoctorRegistrationRequest;
+import vn.xuanthai.clinic.booking.dto.request.DoctorSelfUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.DoctorResponse;
 import vn.xuanthai.clinic.booking.service.IDoctorService;
 
@@ -84,5 +85,11 @@ public class DoctorController {
     public ResponseEntity<DoctorResponse> getMyDoctorProfile() {
         // Gọi service xử lý toàn bộ logic
         return ResponseEntity.ok(doctorService.getMyDoctorProfile());
+    }
+
+    @PutMapping("/doctor/profile/me")
+    @PreAuthorize("hasAuthority('DOCTOR_UPDATE_SELF')")
+    public ResponseEntity<DoctorResponse> updateMyDoctorProfile(@RequestBody DoctorSelfUpdateRequest request) {
+        return ResponseEntity.ok(doctorService.updateMyDoctorProfile(request));
     }
 }

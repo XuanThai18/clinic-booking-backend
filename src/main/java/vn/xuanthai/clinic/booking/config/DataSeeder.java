@@ -50,6 +50,7 @@ public class DataSeeder implements CommandLineRunner {
         Permission doctorCreate = createPermissionIfNotFound("DOCTOR_CREATE");
         Permission doctorUpdate = createPermissionIfNotFound("DOCTOR_UPDATE");
         Permission doctorDelete = createPermissionIfNotFound("DOCTOR_DELETE");
+        Permission doctorUpdateSelf = createPermissionIfNotFound("DOCTOR_UPDATE_SELF");
         Permission doctorManageSchedule = createPermissionIfNotFound("DOCTOR_MANAGE_SCHEDULE"); // Bác sĩ tự xếp lịch
 
         // Quyền quản lý lịch hẹn (Appointment)
@@ -70,8 +71,8 @@ public class DataSeeder implements CommandLineRunner {
 
         // Role DOCTOR: Bác sĩ cần quyền quản lý lịch của mình
         createRoleIfNotFound("ROLE_DOCTOR", Set.of(
-                doctorManageSchedule
-                // Có thể thêm doctorUpdate nếu muốn bác sĩ tự sửa hồ sơ
+                doctorManageSchedule,
+                doctorUpdateSelf
         ));
 
         // Role ADMIN: Quản lý vận hành (nhưng không quản lý User cấp cao)

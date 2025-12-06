@@ -2,6 +2,7 @@ package vn.xuanthai.clinic.booking.service;
 
 import vn.xuanthai.clinic.booking.dto.request.DoctorCreateRequest;
 import vn.xuanthai.clinic.booking.dto.request.DoctorRegistrationRequest;
+import vn.xuanthai.clinic.booking.dto.request.DoctorSelfUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.DoctorResponse;
 import java.util.List;
 
@@ -13,6 +14,8 @@ public interface IDoctorService {
     DoctorResponse registerDoctor(DoctorRegistrationRequest request);
 
     DoctorResponse getDoctorById(Long doctorId);
+
+    DoctorResponse updateMyDoctorProfile(DoctorSelfUpdateRequest request);
 
     // Lấy danh sách bác sĩ (có thể thêm phân trang, lọc sau)
     List<DoctorResponse> getAllDoctors();
