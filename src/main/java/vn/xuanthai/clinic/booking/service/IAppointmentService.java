@@ -2,6 +2,7 @@ package vn.xuanthai.clinic.booking.service;
 
 import org.springframework.security.core.Authentication;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
+import vn.xuanthai.clinic.booking.dto.request.BookingRequest;
 import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.enums.AppointmentStatus;
@@ -29,4 +30,6 @@ public interface IAppointmentService {
      * Bệnh nhân (hoặc Admin) hủy một lịch hẹn.
      */
     AppointmentResponse cancelAppointment(Long appointmentId, Authentication authentication);
+
+    AppointmentResponse bookAppointment(BookingRequest request);
 }

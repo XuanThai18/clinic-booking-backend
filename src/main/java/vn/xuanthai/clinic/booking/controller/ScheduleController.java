@@ -56,11 +56,12 @@ public class ScheduleController {
 
     // ----- API CÔNG KHAI (CHO BỆNH NHÂN) -----
 
-    @GetMapping("/public/doctors/{doctorId}/available-schedules")
-    public ResponseEntity<List<ScheduleResponse>> getAvailableSchedulesForPatient(
-            @PathVariable Long doctorId,
+    @GetMapping("/public/schedules")
+    public ResponseEntity<List<ScheduleResponse>> getSchedulesForPatient(
+            @RequestParam Long doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        return ResponseEntity.ok(scheduleService.getAvailableSchedulesByDoctorAndDate(doctorId, date));
+        // Gọi Service lấy lịch (nhớ dùng hàm có sắp xếp OrderByTime...)
+        return ResponseEntity.ok(scheduleService.getSchedulesByDoctorAndDate(doctorId, date));
     }
 }

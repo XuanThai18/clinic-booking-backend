@@ -3,10 +3,7 @@ package vn.xuanthai.clinic.booking.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.UserUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.service.IUserService;
@@ -17,6 +14,12 @@ import vn.xuanthai.clinic.booking.service.IUserService;
 public class UserController {
 
     private final IUserService userService;
+
+    @GetMapping("/profile/me")
+    @PreAuthorize("isAuthenticated()") // Ai đăng nhập rồi cũng xem được
+    public ResponseEntity<UserResponse> getMyProfile() {
+        return ResponseEntity.ok(userService.getMyProfileApi());
+    }
 
     @PutMapping("/profile/me")
     @PreAuthorize("isAuthenticated()") // Ai đăng nhập rồi cũng dùng được

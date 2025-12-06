@@ -8,6 +8,8 @@ import lombok.Setter;
 import vn.xuanthai.clinic.booking.enums.ScheduleStatus;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 // Thêm ràng buộc UNIQUE kết hợp trên 3 cột
@@ -42,7 +44,7 @@ public class Schedule {
     @JsonBackReference("doctor-schedules")
     private Doctor doctor;
 
-    @OneToOne(mappedBy = "schedule", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "schedule", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonManagedReference("schedule-appointment")
-    private Appointment appointment;
+    private List<Appointment> appointments = new ArrayList<>();
 }

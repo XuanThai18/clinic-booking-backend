@@ -1,16 +1,14 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Predicate;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.xuanthai.clinic.booking.dto.request.CreateUserRequest;
 import vn.xuanthai.clinic.booking.dto.request.UserUpdateRequest;
 import vn.xuanthai.clinic.booking.dto.response.UserResponse;
@@ -26,8 +24,6 @@ import vn.xuanthai.clinic.booking.repository.PermissionRepository;
 import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.service.IUserService;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -98,6 +94,17 @@ public class UserServiceImpl implements IUserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return mapToUserResponse(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true) // Chỉ đọc dữ liệu, tối ưu hiệu năng
+    public UserResponse getMyProfileApi() {
+        // 1. Lấy thông tin người dùng đang đăng nhập từ Security Context
+        // (Hàm này em đã có từ các bài trước trong UserContextService)
+        User currentUser = userContextService.getCurrentUser();
+
+        // 2. Chuyển đổi (Map) từ Entity sang DTO để trả về
+        return mapToUserResponse(currentUser);
     }
 
     @Override

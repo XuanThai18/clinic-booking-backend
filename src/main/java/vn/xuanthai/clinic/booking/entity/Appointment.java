@@ -22,9 +22,8 @@ public class Appointment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Mối quan hệ 1-1 với Schedule, một schedule chỉ có 1 appointment
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "schedule_id", nullable = false)
     @JsonBackReference("schedule-appointment")
     private Schedule schedule;
 

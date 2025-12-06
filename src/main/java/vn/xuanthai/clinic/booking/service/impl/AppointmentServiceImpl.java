@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
+import vn.xuanthai.clinic.booking.dto.request.BookingRequest;
 import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.entity.Appointment;
@@ -22,6 +23,8 @@ import vn.xuanthai.clinic.booking.repository.ScheduleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.service.IAppointmentService;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -162,48 +165,49 @@ public class AppointmentServiceImpl implements IAppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn: " + appointmentId));
 
-        // 2. Lấy User hiện tại
+        // 2. Lấy User hiện tại (Dùng UserContextService cho gọn)
         User currentUser = userContextService.getCurrentUser();
 
-        // 3. KIỂM TRA QUYỀN (Owner hoặc Admin/Staff có quyền Cancel)
+        // 3. KIỂM TRA QUYỀN
+        // Quyền 1: Là chủ nhân (Bệnh nhân đặt lịch này)
         boolean isOwner = appointment.getPatient().getId().equals(currentUser.getId());
 
-        // Kiểm tra quyền dựa trên Authority (thay vì fix cứng Role)
-        boolean hasCancelPermission = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("APPOINTMENT_CANCEL") ||
+        // Quyền 2: Là Admin hoặc Super Admin
+        // (Kiểm tra Role trực tiếp cho đơn giản, đỡ phải config thêm Authority trong DB)
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") ||
                         a.getAuthority().equals("ROLE_SUPER_ADMIN"));
 
-        if (!isOwner && !hasCancelPermission) {
+        // Nếu không phải Chủ và cũng không phải Admin -> Cút
+        if (!isOwner && !isAdmin) {
             throw new AccessDeniedException("Bạn không có quyền hủy lịch hẹn này.");
         }
 
-        // 4. Gọi hàm chung để xử lý hủy
+        // 4. Gọi hàm xử lý hủy (Tái sử dụng logic)
         processCancellation(appointment);
 
         return mapToResponse(appointment);
     }
 
-    // --- HÀM TRỢ GIÚP (PRIVATE) ---
-    // Logic hủy lịch được gom vào đây để tái sử dụng
+    // --- HÀM TRỢ GIÚP (Private) ---
+    // Hàm này em để ở dưới cùng của class Service
     private void processCancellation(Appointment appointment) {
-        // Validate logic nghiệp vụ
-        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new BadRequestException("Lịch hẹn này đã được hủy trước đó.");
-        }
+        // 1. Validate trạng thái
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new BadRequestException("Không thể hủy lịch hẹn đã hoàn thành (đã khám xong).");
+            throw new BadRequestException("Không thể hủy lịch đã khám xong.");
+        }
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new BadRequestException("Lịch này đã bị hủy trước đó rồi.");
         }
 
-        // 1. Cập nhật trạng thái lịch hẹn
+        // 2. Cập nhật trạng thái Lịch hẹn -> CANCELLED
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointment);
 
-        // 2. Trả lại khung giờ (Schedule) thành AVAILABLE
+        // 3. QUAN TRỌNG: Trả lại Slot (Schedule) thành AVAILABLE
         Schedule schedule = appointment.getSchedule();
         schedule.setStatus(ScheduleStatus.AVAILABLE);
         scheduleRepository.save(schedule);
-
-        // (Tại đây có thể thêm logic gửi email thông báo hủy)
     }
 
     @Override
@@ -246,6 +250,46 @@ public class AppointmentServiceImpl implements IAppointmentService {
         appointmentRepository.save(appointment);
 
         // (Có thể gửi email đơn thuốc cho bệnh nhân ở đây)
+    }
+
+    @Override
+    @Transactional
+    public AppointmentResponse bookAppointment(BookingRequest request) {
+        // 1. Lấy thông tin bệnh nhân đang đăng nhập
+        User patient = userContextService.getCurrentUser();
+
+        // 2. Tìm lịch làm việc (Schedule)
+        Schedule schedule = scheduleRepository.findById(request.getScheduleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Lịch khám không tồn tại!"));
+
+        // 3. VALIDATE: Kiểm tra xem lịch này có còn trống không?
+        if (schedule.getStatus() == ScheduleStatus.BOOKED) {
+            throw new BadRequestException("Lịch này đã có người đặt mất rồi!");
+        }
+
+        // 4. VALIDATE: Không được đặt lịch quá khứ (Backend check lại cho chắc)
+        // Kết hợp ngày và giờ để so sánh với hiện tại
+        LocalDateTime scheduleTime = LocalDateTime.of(schedule.getDate(), LocalTime.parse(schedule.getTimeSlot()));
+        if (scheduleTime.isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Không thể đặt lịch trong quá khứ!");
+        }
+
+        // 5. Tạo hồ sơ hẹn (Appointment)
+        Appointment appointment = new Appointment();
+        appointment.setPatient(patient);
+        appointment.setSchedule(schedule); // Link với khung giờ
+        appointment.setReason(request.getReason());
+        appointment.setStatus(AppointmentStatus.PENDING); // Mặc định là Chờ xác nhận
+        // appointment.setCreatedAt(LocalDateTime.now()); // Nếu em có trường này
+
+        // 6. QUAN TRỌNG: Đánh dấu khung giờ là ĐÃ ĐẶT (Để người khác không đặt được nữa)
+        schedule.setStatus(ScheduleStatus.BOOKED);
+        scheduleRepository.save(schedule);
+
+        // 7. Lưu lịch hẹn
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        return mapToResponse(savedAppointment);
     }
 
     // --- Phương thức trợ giúp ---

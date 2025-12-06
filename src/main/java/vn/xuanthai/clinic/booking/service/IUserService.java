@@ -12,6 +12,7 @@ import java.util.Optional;
 
 public interface IUserService {
     User createUserByAdmin(CreateUserRequest request);
+    UserResponse getMyProfileApi();
     UserResponse updateMyProfile(UserUpdateRequest request);
     Optional<User> findByEmail(String email);
     List<UserResponse> getAllUsers();

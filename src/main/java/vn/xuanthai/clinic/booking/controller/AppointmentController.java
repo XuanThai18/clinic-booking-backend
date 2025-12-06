@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
+import vn.xuanthai.clinic.booking.dto.request.BookingRequest;
 import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.enums.AppointmentStatus;
@@ -60,9 +61,23 @@ public class AppointmentController {
         return ResponseEntity.ok().build();
     }
 
-    // (Em có thể tự viết API cho phép Bệnh nhân hủy lịch)
-    // @PutMapping("/appointments/{id}/cancel")
-    // @PreAuthorize("hasRole('PATIENT')")
+    // API Đặt lịch (Dành cho Bệnh nhân)
+    @PostMapping("/appointments/book")
+    @PreAuthorize("hasRole('PATIENT')") // Chỉ bệnh nhân mới được đặt
+    public ResponseEntity<AppointmentResponse> bookAppointment(@RequestBody BookingRequest request) {
+        return ResponseEntity.ok(appointmentService.bookAppointment(request));
+    }
+
+    // API Hủy lịch (Dành cho Bệnh nhân tự hủy lịch của mình)
+    @PutMapping("/appointments/{id}/cancel")
+    @PreAuthorize("hasRole('PATIENT')") // Chỉ cho phép bệnh nhân
+    public ResponseEntity<AppointmentResponse> cancelMyAppointment(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        // Gọi hàm service (hàm này em đã viết ở các bài trước)
+        return ResponseEntity.ok(appointmentService.cancelAppointment(id, authentication));
+    }
 
     // ----- API DÀNH CHO ADMIN -----
 
