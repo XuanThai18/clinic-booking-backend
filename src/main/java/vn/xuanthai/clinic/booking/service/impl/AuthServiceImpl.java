@@ -1,6 +1,7 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -14,6 +15,7 @@ import vn.xuanthai.clinic.booking.dto.response.UserResponse;
 import vn.xuanthai.clinic.booking.entity.Role;
 import vn.xuanthai.clinic.booking.entity.User;
 import vn.xuanthai.clinic.booking.exception.BadRequestException;
+import vn.xuanthai.clinic.booking.exception.ResourceNotFoundException;
 import vn.xuanthai.clinic.booking.repository.RoleRepository;
 import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.security.JwtService;
@@ -23,6 +25,7 @@ import vn.xuanthai.clinic.booking.service.IAuthService;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +39,10 @@ public class AuthServiceImpl implements IAuthService {
     private final JwtService jwtService;
     private final LoginAttemptService loginAttemptService;
     private final CaptchaService captchaService;
+    private final EmailService emailService;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @Override
     public User register(RegisterRequest request) {
@@ -143,6 +150,51 @@ public class AuthServiceImpl implements IAuthService {
                 .accessToken(jwtToken)
                 .user(userDto) // <-- THÊM VÀO RESPONSE
                 .build();
+    }
+
+    // 1. XỬ LÝ YÊU CẦU QUÊN MẬT KHẨU
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Email không tồn tại trong hệ thống."));
+
+        // Tạo token ngẫu nhiên
+        String token = UUID.randomUUID().toString();
+
+        // Lưu token và thời gian hết hạn (ví dụ: 15 phút)
+        user.setResetPasswordToken(token);
+        user.setResetPasswordTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        // Tạo link reset (Trỏ về Frontend React)
+        // Ví dụ: http://localhost:5173/reset-password?token=xyz
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+
+        // Gửi email
+        emailService.sendEmail(
+                user.getEmail(),
+                "Yêu cầu đặt lại mật khẩu - Clinic Booking",
+                "Xin chào, vui lòng nhấn vào link sau để đặt lại mật khẩu: \n" + resetLink
+        );
+    }
+
+    // 2. XỬ LÝ ĐẶT LẠI MẬT KHẨU MỚI
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new BadRequestException("Token không hợp lệ hoặc không tìm thấy."));
+
+        // Kiểm tra hết hạn
+        if (user.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Token đã hết hạn. Vui lòng thử lại.");
+        }
+
+        // Cập nhật mật khẩu mới (Nhớ mã hóa)
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        // Xóa token đi để không dùng lại được nữa
+        user.setResetPasswordToken(null);
+        user.setResetPasswordTokenExpiry(null);
+
+        userRepository.save(user);
     }
 
     private UserResponse mapToUserResponse(User user) {

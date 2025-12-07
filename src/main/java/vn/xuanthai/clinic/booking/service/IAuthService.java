@@ -8,4 +8,6 @@ import vn.xuanthai.clinic.booking.entity.User;
 public interface IAuthService {
     User register(RegisterRequest request);
     AuthResponse login(AuthRequest request);
+    void forgotPassword(String email);
+    void resetPassword(String token, String newPassword);
 }

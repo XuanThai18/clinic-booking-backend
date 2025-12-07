@@ -91,6 +91,12 @@ public class User {
     )
     private Set<Permission> extraPermissions = new HashSet<>();
 
+    // Token reset mật khẩu
+    private String resetPasswordToken;
+
+    // Thời gian hết hạn của token
+    private LocalDateTime resetPasswordTokenExpiry;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("user-doctor")
     private Doctor doctor; // Một User có thể có một hồ sơ Doctor

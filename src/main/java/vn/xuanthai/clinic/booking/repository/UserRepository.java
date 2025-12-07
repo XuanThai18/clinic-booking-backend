@@ -27,4 +27,5 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
                            @Param("roleName") String roleName,
                            Pageable pageable);
 
+    Optional<User> findByResetPasswordToken(String token);
 }
