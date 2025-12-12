@@ -56,19 +56,23 @@
 * PostgreSQL (hoặc MySQL) đã cài đặt và đang chạy.
 
 ### 2. Clone dự án
-```bash
-git clone [https://github.com/username/clinic-booking-backend.git](https://github.com/username/clinic-booking-backend.git)
-cd clinic-booking-backend
 
+```bash
+git clone https://github.com/username/clinic-booking-backend.git
+cd clinic-booking-backend
 3. Cấu hình Database & Biến môi trường
+Mở file src/main/resources/application.properties và cập nhật các thông số sau:
+
+Properties
+
 spring.application.name=Clinic Booking Backend
 
 # =======================================
 # === PostgreSQL Database Configuration ==
 # =======================================
-spring.datasource.url=jdbc:postgresql://<HOST>:<PORT>/<DATABASE_NAME>
-spring.datasource.username=<DB_USERNAME>
-spring.datasource.password=<DB_PASSWORD>
+spring.datasource.url=jdbc:postgresql://localhost:5432/clinic_booking
+spring.datasource.username=postgres
+spring.datasource.password=your_password
 
 # =======================================
 # === JPA & Hibernate Configuration ======
@@ -82,13 +86,13 @@ spring.jpa.properties.hibernate.format_sql=true
 # === JWT Secret Key =====================
 # =======================================
 # Must be a long, secure, random string. Example 64+ chars:
-application.security.jwt.secret-key=<YOUR_SECURE_JWT_SECRET>
+application.security.jwt.secret-key=your_very_long_secret_key_here_at_least_64_bytes
 
 # =======================================
 # === Database Encryption Key ============
 # =======================================
 # For AES: key length must be 16, 24, or 32 chars
-application.security.db.encryption-key=<YOUR_32_CHAR_AES_KEY>
+application.security.db.encryption-key=your_32_char_encryption_key_here
 
 # =======================================
 # === Frontend URL =======================
@@ -98,48 +102,41 @@ app.frontend.url=http://localhost:5173
 # =======================================
 # === Google reCAPTCHA v2 ================
 # =======================================
-recaptcha.secret=<RECAPTCHA_SECRET_KEY>
+recaptcha.secret=your_recaptcha_secret_key
 recaptcha.verify-url=https://www.google.com/recaptcha/api/siteverify
 
 # =======================================
 # === Cloudinary Configuration ===========
 # =======================================
-cloudinary.cloud_name=<CLOUDINARY_CLOUD_NAME>
-cloudinary.api_key=<CLOUDINARY_API_KEY>
-cloudinary.api_secret=<CLOUDINARY_API_SECRET>
+cloudinary.cloud_name=your_cloud_name
+cloudinary.api_key=your_api_key
+cloudinary.api_secret=your_api_secret
 
 # =======================================
 # === Email (SMTP) Configuration =========
 # =======================================
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=<EMAIL_USERNAME>
-spring.mail.password=<EMAIL_APP_PASSWORD>
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_app_password
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
-
 4. Chạy ứng dụng
+Bash
+
 mvn spring-boot:run
+📚 API Endpoints Chính
+Dưới đây là danh sách các API chính và hình ảnh minh họa từ Postman/Swagger.
 
-```bash
+Auth (Xác thực) <img width="620" src="https://github.com/user-attachments/assets/06e6bda0-8b89-4d24-b7fb-b421bbf61279" alt="Auth API" />
 
-## 📚 API Endpoints Chính
+Users & Doctors (Quản lý người dùng) <img width="700" src="https://github.com/user-attachments/assets/a74e2663-10a8-44ba-9507-06b136926d74" alt="User API" />
 
-Auth:
-
-<img width="620" src="https://github.com/user-attachments/assets/06e6bda0-8b89-4d24-b7fb-b421bbf61279" />
-
-Users & Doctors:
-
-<img width="700" src="https://github.com/user-attachments/assets/a74e2663-10a8-44ba-9507-06b136926d74" />
-
-Appointments (Lịch hẹn):
-
-<img width="839" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" />
-
----
+Appointments (Lịch hẹn) <img width="839" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" alt="Appointment API" />
 
 📂 Cấu trúc thư mục
+Plaintext
+
 src/main/java/vn/xuanthai/clinic
 ├── config          # Cấu hình (Security, CORS, Swagger)
 ├── controller      # API Controllers
@@ -149,5 +146,3 @@ src/main/java/vn/xuanthai/clinic
 ├── repository      # Data Access Layer
 ├── service         # Business Logic Layer
 └── utils           # Các hàm tiện ích (JwtUtils...)
-
-
