@@ -60,11 +60,11 @@
 ```bash
 git clone https://github.com/username/clinic-booking-backend.git
 cd clinic-booking-backend
-3. Cấu hình Database & Biến môi trường
-Mở file src/main/resources/application.properties và cập nhật các thông số sau:
+```
+### 3. Cấu hình Database & Biến môi trường
+Mở file `src/main/resources/application.properties` và cập nhật các thông số sau:
 
-Properties
-
+```properties
 spring.application.name=Clinic Booking Backend
 
 # =======================================
@@ -121,10 +121,14 @@ spring.mail.username=your_email@gmail.com
 spring.mail.password=your_app_password
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
-4. Chạy ứng dụng
-Bash
+```
 
+### 4. Chạy ứng dụng
+
+```bash
 mvn spring-boot:run
+```
+
 📚 API Endpoints Chính
 Dưới đây là danh sách các API chính và hình ảnh minh họa từ Postman/Swagger.
 
