@@ -1,6 +1,7 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.xuanthai.clinic.booking.dto.request.AppointmentRequest;
 import vn.xuanthai.clinic.booking.dto.request.BookingRequest;
 import vn.xuanthai.clinic.booking.dto.request.CompletionRequest;
+import vn.xuanthai.clinic.booking.dto.response.AppointmentBookedEvent;
+import vn.xuanthai.clinic.booking.dto.response.AppointmentCancelledEvent;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentResponse;
 import vn.xuanthai.clinic.booking.entity.Appointment;
 import vn.xuanthai.clinic.booking.entity.Doctor;
@@ -37,6 +40,10 @@ public class AppointmentServiceImpl implements IAppointmentService {
     private final UserRepository userRepository;
     private final UserContextService userContextService;
     private final DoctorRepository doctorRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    // Tên topic trong Kafka
+    private final String NOTIFICATION_TOPIC = "notification-topic";
 
     @Override
     @Transactional // Rất quan trọng! Đảm bảo CẢ HAI thao tác cùng thành công
@@ -70,7 +77,21 @@ public class AppointmentServiceImpl implements IAppointmentService {
 
         Appointment savedAppointment = appointmentRepository.save(newAppointment);
 
-        // (TODO: Gửi message vào Message Queue để thông báo cho bác sĩ/bệnh nhân)
+        // --- ĐOẠN MỚI: BẮN SỰ KIỆN KAFKA ---
+        // Chúng ta không gửi mail ở đây để tránh làm chậm response trả về cho user
+        AppointmentBookedEvent event = new AppointmentBookedEvent(
+                savedAppointment.getId(),
+                patient.getEmail(),
+                patient.getFullName(),
+                schedule.getDoctor().getUser().getFullName(),
+                schedule.getDate(),
+                schedule.getTimeSlot()
+        );
+
+        // Gửi bất đồng bộ (Async)
+        System.out.println(">>>>> [BƯỚC 1] PRODUCER: Đang chuẩn bị bắn tin nhắn vào Kafka...");
+        kafkaTemplate.send("appointment-booked-topic", event);
+        System.out.println(">>>>> [BƯỚC 1] PRODUCER: Đã bắn xong!");
 
         // 6. Trả về DTO
         return mapToResponse(savedAppointment);
@@ -186,6 +207,30 @@ public class AppointmentServiceImpl implements IAppointmentService {
         // 4. Gọi hàm xử lý hủy (Tái sử dụng logic)
         processCancellation(appointment);
 
+        // 5. GỬI SỰ KIỆN KAFKA ĐỂ BẮN MAIL
+        // Lấy đối tượng Schedule ra trước cho gọn code
+        Schedule schedule = appointment.getSchedule();
+
+        AppointmentCancelledEvent event = new AppointmentCancelledEvent(
+                appointment.getPatient().getEmail(),
+                appointment.getPatient().getFullName(),
+
+                // 1. Lấy Bác sĩ
+                // Giả sử trong Schedule có biến doctor kiểu User
+                schedule.getDoctor().getUser().getFullName(),
+
+                // 2. Lấy Ngày
+                schedule.getDate(),
+
+                // 3. Lấy Giờ
+                schedule.getTimeSlot(),
+
+                "Người dùng yêu cầu hủy"
+        );
+
+        // Gửi event
+        kafkaTemplate.send(NOTIFICATION_TOPIC, event);
+
         return mapToResponse(appointment);
     }
 
@@ -280,7 +325,6 @@ public class AppointmentServiceImpl implements IAppointmentService {
         appointment.setSchedule(schedule); // Link với khung giờ
         appointment.setReason(request.getReason());
         appointment.setStatus(AppointmentStatus.PENDING); // Mặc định là Chờ xác nhận
-        // appointment.setCreatedAt(LocalDateTime.now()); // Nếu em có trường này
 
         // 6. QUAN TRỌNG: Đánh dấu khung giờ là ĐÃ ĐẶT (Để người khác không đặt được nữa)
         schedule.setStatus(ScheduleStatus.BOOKED);
@@ -288,6 +332,26 @@ public class AppointmentServiceImpl implements IAppointmentService {
 
         // 7. Lưu lịch hẹn
         Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // 8. GỬI KAFKA (ĐOẠN MỚI THÊM)
+        try {
+            AppointmentBookedEvent event = new AppointmentBookedEvent(
+                    savedAppointment.getId(),
+                    patient.getEmail(),       // Email để gửi vé
+                    patient.getFullName(),    // Tên để chào
+                    schedule.getDoctor().getUser().getFullName(), // ID bác sĩ để thông báo
+                    schedule.getDate(),
+                    schedule.getTimeSlot()    // Giờ khám
+            );
+            kafkaTemplate.send("appointment-booked-topic", event);
+
+            System.out.println(">>>>>>>>>> [5] Đã bắn Kafka thành công!");
+        } catch (Exception e) {
+            // Nếu lỗi Kafka thì chỉ log ra, KHÔNG throw lỗi để tránh Rollback DB
+            // Vì lịch đã đặt thành công rồi, lỗi gửi mail tính sau.
+            System.err.println(">>>>>>>>>> [LỖI KAFKA] Không gửi được event: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         return mapToResponse(savedAppointment);
     }

@@ -21,6 +21,7 @@ import vn.xuanthai.clinic.booking.repository.UserRepository;
 import vn.xuanthai.clinic.booking.security.JwtService;
 import vn.xuanthai.clinic.booking.security.UserDetailsImpl;
 import vn.xuanthai.clinic.booking.service.IAuthService;
+import vn.xuanthai.clinic.booking.utils.impl.EmailService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
