@@ -121,7 +121,7 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 4. Chạy ứng dụng
 mvn spring-boot:run
 
----
+```bash
 
 ## 📚 API Endpoints Chính
 
@@ -136,6 +136,8 @@ Users & Doctors:
 Appointments (Lịch hẹn):
 
 <img width="839" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" />
+
+---
 
 📂 Cấu trúc thư mục
 src/main/java/vn/xuanthai/clinic
