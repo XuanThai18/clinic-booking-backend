@@ -121,13 +121,19 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 4. Chạy ứng dụng
 mvn spring-boot:run
 
-📚 API Endpoints Chính
+## 📚 API Endpoints Chính
+
 Auth:
-<img width="620" height="234" alt="image" src="https://github.com/user-attachments/assets/06e6bda0-8b89-4d24-b7fb-b421bbf61279" />
+
+<img width="620" src="https://github.com/user-attachments/assets/06e6bda0-8b89-4d24-b7fb-b421bbf61279" />
+
 Users & Doctors:
-<img width="700" height="228" alt="image" src="https://github.com/user-attachments/assets/a74e2663-10a8-44ba-9507-06b136926d74" />
+
+<img width="700" src="https://github.com/user-attachments/assets/a74e2663-10a8-44ba-9507-06b136926d74" />
+
 Appointments (Lịch hẹn):
-<img width="839" height="278" alt="image" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" />
+
+<img width="839" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" />
 
 📂 Cấu trúc thư mục
 src/main/java/vn/xuanthai/clinic
