@@ -28,7 +28,7 @@ public class ScheduleController {
     @PreAuthorize("hasAnyAuthority('DOCTOR_MANAGE_SCHEDULE')")
     public ResponseEntity<List<ScheduleResponse>> createDoctorSchedule(
             @Valid @RequestBody ScheduleCreateRequest request,
-            Authentication authentication) { // Spring sẽ tự động "tiêm" thông tin người dùng đang đăng nhập vào đây
+            Authentication authentication) {
 
         List<ScheduleResponse> schedules = scheduleService.createDoctorSchedule(request, authentication);
         return new ResponseEntity<>(schedules, HttpStatus.CREATED);
@@ -61,7 +61,7 @@ public class ScheduleController {
             @RequestParam Long doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        // Gọi Service lấy lịch (nhớ dùng hàm có sắp xếp OrderByTime...)
+        // Gọi Service lấy lịch
         return ResponseEntity.ok(scheduleService.getSchedulesByDoctorAndDate(doctorId, date));
     }
 }

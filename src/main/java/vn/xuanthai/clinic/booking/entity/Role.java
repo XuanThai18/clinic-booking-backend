@@ -25,7 +25,7 @@ public class Role {
     @Column(name = "name", length = 50, unique = true, nullable = false)
     private String name;
 
-    @ManyToMany(mappedBy = "roles") // 'roles' là tên trường trong class User
+    @ManyToMany(mappedBy = "roles")
     @JsonBackReference("user-roles")
     private Set<User> users = new HashSet<>();
 

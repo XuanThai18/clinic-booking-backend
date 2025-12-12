@@ -23,7 +23,7 @@ public class DoctorResponse {
     private String image; // Avatar
     private Set<String> otherImages; // Ảnh bằng cấp/chứng chỉ
 
-    // Chúng ta sẽ trả về thông tin chi tiết của chuyên khoa và phòng khám
+    //  trả về thông tin chi tiết của chuyên khoa và phòng khám
     private SpecialtyResponse specialty;
     private ClinicResponse clinic;
 }

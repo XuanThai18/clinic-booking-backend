@@ -21,6 +21,6 @@ public class UserResponse {
     private boolean isActive;
     private Long clinicId;
     private LocalDateTime createdAt;
-    private Set<String> roles; // Chỉ trả về tên của các role
+    private Set<String> roles;
     private Set<String> extraPermissions;
 }

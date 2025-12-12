@@ -20,8 +20,6 @@ public class FileController {
     @PostMapping("/upload-multiple") // Đổi tên endpoint cho rõ nghĩa
     @PreAuthorize("hasAnyAuthority('FILE_UPLOAD')")
     public ResponseEntity<Map<String, ?>> uploadFiles(
-            // Sửa từ ("file") MultipartFile file
-            // thành ("files") MultipartFile[] files
             @RequestParam("files") MultipartFile[] files
     ) {
 

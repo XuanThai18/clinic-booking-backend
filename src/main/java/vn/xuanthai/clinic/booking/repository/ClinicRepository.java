@@ -6,5 +6,5 @@ import vn.xuanthai.clinic.booking.entity.Clinic;
 
 @Repository
 public interface ClinicRepository extends JpaRepository<Clinic, Long> {
-    // Các phương thức CRUD cơ bản đã đủ dùng cho các tính năng hiện tại
+
 }

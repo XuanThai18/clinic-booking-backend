@@ -28,14 +28,14 @@ public class Doctor {
     @Column(name = "price", precision = 12, scale = 2)
     private BigDecimal price;
 
-    // 1. Ảnh đại diện (Avatar) - Giữ nguyên cái này, KHÔNG XÓA
+    // 1. Ảnh đại diện (Avatar)
     // Dùng để hiện ở card, danh sách, avatar nhỏ...
     @Column(name = "image")
     private String image;
 
-    // 2. Ảnh bằng cấp, chứng chỉ, hoạt động (Thêm mới)
+    // 2. Ảnh bằng cấp, chứng chỉ, hoạt động
     // Dùng để hiện trong trang chi tiết (Doctor Detail)
-    @ElementCollection(fetch = FetchType.LAZY) // Nên để LAZY vì list này chỉ cần khi xem chi tiết
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
             name = "doctor_images", // Bảng phụ
             joinColumns = @JoinColumn(name = "doctor_id")

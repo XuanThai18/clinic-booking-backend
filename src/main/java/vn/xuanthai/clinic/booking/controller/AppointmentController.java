@@ -55,7 +55,7 @@ public class AppointmentController {
     @PreAuthorize("hasAuthority('DOCTOR_MANAGE_SCHEDULE')") // Yêu cầu quyền bác sĩ
     public ResponseEntity<Void> completeAppointment(
             @PathVariable Long id,
-            @Valid @RequestBody CompletionRequest request) { // Dùng DTO và @Valid
+            @Valid @RequestBody CompletionRequest request) {
 
         appointmentService.completeAppointment(id, request);
         return ResponseEntity.ok().build();
@@ -74,8 +74,6 @@ public class AppointmentController {
     public ResponseEntity<AppointmentResponse> cancelMyAppointment(
             @PathVariable Long id,
             Authentication authentication) {
-
-        // Gọi hàm service (hàm này em đã viết ở các bài trước)
         return ResponseEntity.ok(appointmentService.cancelAppointment(id, authentication));
     }
 

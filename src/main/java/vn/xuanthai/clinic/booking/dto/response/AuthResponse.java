@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder // <-- THÊM ANNOTATION NÀY VÀO
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthResponse {

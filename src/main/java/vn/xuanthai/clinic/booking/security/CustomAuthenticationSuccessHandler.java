@@ -28,7 +28,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         String email = userDetails.getUsername();
 
-        // 2. Reset bộ đếm đăng nhập sai và xóa trạng thái khóa (Nhiệm vụ chính)
+        // 2. Reset bộ đếm đăng nhập sai và xóa trạng thái khóa
         loginAttemptService.loginSucceeded(email);
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.getFailedLoginAttempts() > 0 || user.getLockoutEndTime() != null) {

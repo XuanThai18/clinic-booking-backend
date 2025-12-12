@@ -33,7 +33,7 @@ public class DataSeeder implements CommandLineRunner {
         Permission userView = createPermissionIfNotFound("USER_VIEW");
         Permission userCreate = createPermissionIfNotFound("USER_CREATE");
         Permission userEdit = createPermissionIfNotFound("USER_EDIT");
-        Permission userDelete = createPermissionIfNotFound("USER_DELETE"); // Nguy hiểm, thường chỉ Super Admin
+        Permission userDelete = createPermissionIfNotFound("USER_DELETE");
         Permission userManageRoles = createPermissionIfNotFound("USER_MANAGE_ROLES"); // Quyền lực nhất
 
         // Quyền quản lý chuyên khoa (Specialty)
@@ -64,9 +64,9 @@ public class DataSeeder implements CommandLineRunner {
 
         // === 2. TẠO CÁC VAI TRÒ (ROLES) VÀ GÁN QUYỀN ===
 
-        // Role PATIENT: Quyền hạn rất hạn chế (thường được xử lý riêng trong logic code)
+        // Role PATIENT: Quyền hạn rất hạn chế
         createRoleIfNotFound("ROLE_PATIENT", Set.of(
-                // Có thể thêm các quyền như "APPOINTMENT_CREATE_OWN" nếu muốn quản lý chặt chẽ
+
         ));
 
         // Role DOCTOR: Bác sĩ cần quyền quản lý lịch của mình
@@ -77,9 +77,6 @@ public class DataSeeder implements CommandLineRunner {
 
         // Role ADMIN: Quản lý vận hành (nhưng không quản lý User cấp cao)
         createRoleIfNotFound("ROLE_ADMIN", Set.of(
-                // User
-//                userView, userCreate, userEdit,
-                // Không có userDelete và userManageRoles
 
                 // Specialty
                 specialtyCreate, specialtyUpdate, specialtyDelete,
@@ -98,7 +95,6 @@ public class DataSeeder implements CommandLineRunner {
         ));
 
         // Role SUPER_ADMIN: Quyền lực tuyệt đối (Lấy tất cả permission hiện có trong DB)
-        // Lưu ý: Phải dùng new HashSet để tránh lỗi immutable list nếu findAll trả về list không đổi
         Role superAdminRole = createRoleIfNotFound("ROLE_SUPER_ADMIN", new HashSet<>(permissionRepository.findAll()));
 
 
@@ -139,8 +135,7 @@ public class DataSeeder implements CommandLineRunner {
     private Role createRoleIfNotFound(String name, Set<Permission> permissions) {
         return roleRepository.findByName(name)
                 .map(role -> {
-                    // Nếu role đã tồn tại, CẬP NHẬT lại quyền cho nó (để đảm bảo luôn đúng với code mới nhất)
-                    // Đây là logic quan trọng khi em thêm quyền mới vào code
+                    // Nếu role đã tồn tại, CẬP NHẬT lại quyền cho nó
                     role.setPermissions(permissions);
                     return roleRepository.save(role);
                 })

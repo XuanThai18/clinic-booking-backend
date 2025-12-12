@@ -30,7 +30,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     // Chỉ tìm các lịch CÒN TRỐNG của bác sĩ theo ngày
     List<Schedule> findByDoctorIdAndDateAndStatus(Long doctorId, LocalDate date, ScheduleStatus status);
 
-    // HÀM MỚI: Lấy danh sách các ngày có lịch trong khoảng thời gian (không trùng lặp)
+    // Lấy danh sách các ngày có lịch trong khoảng thời gian (không trùng lặp)
     @Query("SELECT DISTINCT s.date FROM Schedule s WHERE s.doctor.id = :doctorId AND s.date BETWEEN :startDate AND :endDate")
     List<LocalDate> findDistinctDatesByDoctorIdAndDateBetween(
             @Param("doctorId") Long doctorId,

@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class AppointmentResponse {
     private Long id;
     private LocalDateTime createdAt;
-    private AppointmentStatus status; // Đã sửa thành Enum (từ bài trước)
+    private AppointmentStatus status;
     private String reason;
 
     // Thông tin bệnh nhân

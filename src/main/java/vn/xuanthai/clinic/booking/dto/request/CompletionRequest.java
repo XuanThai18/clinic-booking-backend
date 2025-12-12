@@ -9,5 +9,5 @@ public class CompletionRequest {
     @NotBlank(message = "Vui lòng nhập chẩn đoán bệnh")
     private String diagnosis; // Chẩn đoán
 
-    private String prescription; // Đơn thuốc / Ghi chú (có thể để trống nếu chỉ tư vấn)
+    private String prescription; // Đơn thuốc / Ghi chú
 }

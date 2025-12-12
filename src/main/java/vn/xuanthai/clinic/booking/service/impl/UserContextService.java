@@ -27,6 +27,6 @@ public class UserContextService {
      */
     public Long getCurrentClinicId() {
         User user = getCurrentUser();
-        return user.getClinicId(); // Giả sử em đã thêm getter getClinicId() trong Entity User
+        return user.getClinicId();
     }
 }

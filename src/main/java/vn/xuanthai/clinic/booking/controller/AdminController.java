@@ -61,13 +61,13 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/users") // Thay thế hàm getAllUsers cũ
+    @GetMapping("/users")
     @PreAuthorize("hasAnyAuthority('USER_VIEW')")
     public ResponseEntity<UserResponsePage> getAllUsers(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(required = false) String role,
-            @RequestParam(defaultValue = "0") int page, // Trang mặc định là 0 (trang 1)
-            @RequestParam(defaultValue = "10") int size, // Mặc định 10 người/trang
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
@@ -99,8 +99,6 @@ public class AdminController {
     @GetMapping("/permissions")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')") // Chỉ Super Admin mới cần lấy list này
     public ResponseEntity<List<String>> getAllPermissions() {
-        // Em có thể gọi qua service, hoặc gọi nhanh repository ở đây nếu lười (tốt nhất là qua service)
-        // Giả sử em inject PermissionRepository vào đây
         return ResponseEntity.ok(permissionRepository.findAll().stream()
                 .map(Permission::getName)
                 .collect(Collectors.toList()));

@@ -100,7 +100,6 @@ public class UserServiceImpl implements IUserService {
     @Transactional(readOnly = true) // Chỉ đọc dữ liệu, tối ưu hiệu năng
     public UserResponse getMyProfileApi() {
         // 1. Lấy thông tin người dùng đang đăng nhập từ Security Context
-        // (Hàm này em đã có từ các bài trước trong UserContextService)
         User currentUser = userContextService.getCurrentUser();
 
         // 2. Chuyển đổi (Map) từ Entity sang DTO để trả về
@@ -171,7 +170,7 @@ public class UserServiceImpl implements IUserService {
             user.setExtraPermissions(permissions);
         }
 
-        // Cập nhật mật khẩu nếu có (tùy chọn)
+        // Cập nhật mật khẩu nếu có
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -266,8 +265,6 @@ public class UserServiceImpl implements IUserService {
                 .last(pageResult.isLast())
                 .build();
     }
-
-    // Trong UserServiceImpl.java
 
     @Override
     @Transactional

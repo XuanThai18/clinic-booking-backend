@@ -11,7 +11,6 @@ public class SpecialtyRequest {
     @NotBlank(message = "Tên chuyên khoa không được để trống")
     private String name;
 
-    // Các trường này có thể là tùy chọn (nullable)
     private String description;
     private Set<String> imageUrls;
 }

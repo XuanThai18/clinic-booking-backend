@@ -55,8 +55,6 @@ public class ScheduleServiceImpl implements IScheduleService {
             throw new AccessDeniedException("Không có quyền tạo lịch.");
         }
 
-        // --- 👇 BẮT ĐẦU PHẦN KIỂM TRA LOGIC MỚI 👇 ---
-
         // 2. CHECK 1: Không được tạo lịch cho QUÁ KHỨ (Ngày cũ)
         if (request.getDate().isBefore(LocalDate.now())) {
             throw new BadRequestException("Không thể tạo lịch cho ngày trong quá khứ!");
@@ -90,7 +88,6 @@ public class ScheduleServiceImpl implements IScheduleService {
 
             // 5. CHECK 3: Không được tạo giờ đã qua (nếu là hôm nay)
             // Cần parse string "08:00" ra LocalTime để so sánh
-            // (Giả sử timeSlot format chuẩn HH:mm)
             if (isToday) {
                 try {
                     // Lấy phần giờ bắt đầu "08:00" từ chuỗi "08:00 - 08:30" nếu cần

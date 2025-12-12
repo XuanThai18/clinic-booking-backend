@@ -13,10 +13,10 @@ public interface PasswordHistoryRepository extends JpaRepository<PasswordHistory
     //  dùng Pageable cho rõ ràng
     List<PasswordHistory> findByUser(User user, Pageable pageable);
 
-    // THÊM VÀO: Lấy danh sách ID của user, sắp xếp theo thời gian tăng dần
+    // Lấy danh sách ID của user, sắp xếp theo thời gian tăng dần
     @Query("SELECT ph.id FROM PasswordHistory ph WHERE ph.user = :user ORDER BY ph.createdAt ASC")
     List<Long> findIdsByUserOrderByCreatedAtAsc(User user);
 
-    // THÊM VÀO: Hỗ trợ xóa theo danh sách ID (tối ưu hơn deleteAllById từng cái)
-    void deleteAllByIdInBatch(Iterable<Long> ids); // Hoặc chỉ cần deleteAllById nếu không quá quan trọng về hiệu năng batch
+    // Hỗ trợ xóa theo danh sách ID (tối ưu hơn deleteAllById từng cái)
+    void deleteAllByIdInBatch(Iterable<Long> ids);
 }

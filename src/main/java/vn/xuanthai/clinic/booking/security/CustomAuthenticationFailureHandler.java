@@ -66,7 +66,7 @@ public class CustomAuthenticationFailureHandler extends SimpleUrlAuthenticationF
         data.put("timestamp", LocalDateTime.now().toString());
         data.put("status", HttpStatus.UNAUTHORIZED.value());
         data.put("error", "Unauthorized");
-        // Lấy message từ exception cuối cùng (có thể là lỗi gốc hoặc lỗi bị khóa)
+        // Lấy message từ exception cuối cùng
         data.put("message", exceptionToUse.getMessage());
         data.put("path", request.getRequestURI());
         // Thêm cờ báo tài khoản bị khóa (tùy chọn)
