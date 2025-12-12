@@ -129,16 +129,21 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 mvn spring-boot:run
 ```
 
-📚 API Endpoints Chính
+---
+## 📚 API Endpoints Chính
 Dưới đây là danh sách các API chính và hình ảnh minh họa từ Postman/Swagger.
 
-Auth (Xác thực) <img width="620" src="https://github.com/user-attachments/assets/06e6bda0-8b89-4d24-b7fb-b421bbf61279" alt="Auth API" />
+Auth (Xác thực) 
+<img width="620" src="https://github.com/user-attachments/assets/06e6bda0-8b89-4d24-b7fb-b421bbf61279" alt="Auth API" />
 
-Users & Doctors (Quản lý người dùng) <img width="700" src="https://github.com/user-attachments/assets/a74e2663-10a8-44ba-9507-06b136926d74" alt="User API" />
+Users & Doctors (Quản lý người dùng) 
+<img width="700" src="https://github.com/user-attachments/assets/a74e2663-10a8-44ba-9507-06b136926d74" alt="User API" />
 
-Appointments (Lịch hẹn) <img width="839" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" alt="Appointment API" />
+Appointments (Lịch hẹn) 
+<img width="839" src="https://github.com/user-attachments/assets/0a32b8a1-4432-4f9c-979a-2c9f746d97de" alt="Appointment API" />
 
-📂 Cấu trúc thư mục
+---
+## 📂 Cấu trúc thư mục
 Plaintext
 
 src/main/java/vn/xuanthai/clinic
