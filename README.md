@@ -121,6 +121,8 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 4. Chạy ứng dụng
 mvn spring-boot:run
 
+---
+
 ## 📚 API Endpoints Chính
 
 Auth:
