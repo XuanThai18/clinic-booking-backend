@@ -144,8 +144,8 @@ Appointments (Lịch hẹn)
 
 ---
 ## 📂 Cấu trúc thư mục
-Plaintext
 
+```text
 src/main/java/vn/xuanthai/clinic
 ├── config          # Cấu hình (Security, CORS, Swagger)
 ├── controller      # API Controllers
