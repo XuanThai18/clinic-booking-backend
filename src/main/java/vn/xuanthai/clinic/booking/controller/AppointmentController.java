@@ -118,4 +118,14 @@ public class AppointmentController {
         AppointmentResponse response = appointmentService.processRefund(id);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/admin/appointments/{id}")
+    public ResponseEntity<?> deleteAppointment(@PathVariable Long id) {
+        try {
+            appointmentService.deleteAppointment(id);
+            return ResponseEntity.ok(Map.of("message", "Xóa lịch hẹn thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

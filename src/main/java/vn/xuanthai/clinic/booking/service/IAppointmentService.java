@@ -26,8 +26,10 @@ public interface IAppointmentService {
     // Hàm mới: Hoàn thành cuộc hẹn và lưu kết quả
     void completeAppointment(Long appointmentId, CompletionRequest request);
 
+    // admin hủy lịch hẹn tất cả trạng thái
+    void deleteAppointment(Long id);
     /**
-     * Bệnh nhân (hoặc Admin) hủy một lịch hẹn.
+     * Bệnh nhân hủy một lịch hẹn.
      */
     AppointmentResponse cancelAppointment(Long appointmentId, Authentication authentication);
 

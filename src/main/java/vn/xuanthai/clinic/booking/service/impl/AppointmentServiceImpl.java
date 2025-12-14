@@ -29,6 +29,7 @@ import vn.xuanthai.clinic.booking.service.IAppointmentService;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -176,6 +177,30 @@ public class AppointmentServiceImpl implements IAppointmentService {
             appointment.setStatus(newStatus);
             appointmentRepository.save(appointment);
         }
+    }
+
+    @Override
+    public void deleteAppointment(Long id) {
+        // 1. Tìm lịch hẹn
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn với ID: " + id));
+
+        // 2. KIỂM TRA ĐIỀU KIỆN AN TOÀN
+        // Chỉ cho phép xóa nếu trạng thái nằm trong danh sách an toàn
+        List<AppointmentStatus> allowDeleteStatuses = Arrays.asList(
+                AppointmentStatus.CANCELLED,        // Đã hủy
+                AppointmentStatus.COMPLETED,        // Đã xong
+                AppointmentStatus.PENDING_PAYMENT,  // Đang chờ thanh toán (treo)
+                AppointmentStatus.REFUND_PENDING,   // Đang chờ hoàn tiền (nếu muốn)
+                AppointmentStatus.UNPAID            // Chưa thanh toán
+        );
+
+        if (!allowDeleteStatuses.contains(appointment.getStatus())) {
+            throw new BadRequestException("Không thể xóa lịch hẹn đang 'Đã Xác Nhận' hoặc 'Sắp diễn ra'. Vui lòng hủy trước khi xóa!");
+        }
+
+        // 3. Xóa vĩnh viễn khỏi Database
+        appointmentRepository.delete(appointment);
     }
 
     @Override

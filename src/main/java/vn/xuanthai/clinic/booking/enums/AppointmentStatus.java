@@ -5,5 +5,6 @@ public enum AppointmentStatus {
     CONFIRMED,       // Đã thanh toán (Thành công)
     REFUND_PENDING,  // Đã hủy - Chờ hoàn tiền
     CANCELLED,       // Đã hủy hoàn toàn (Tiền nong đã xong)
-    COMPLETED        // Đã khám xong
+    COMPLETED,         // Đã khám xong
+    UNPAID
 }
