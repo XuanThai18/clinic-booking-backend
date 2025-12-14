@@ -8,7 +8,6 @@ import vn.xuanthai.clinic.booking.dto.response.AppointmentBookedEvent;
 import vn.xuanthai.clinic.booking.dto.response.AppointmentCancelledEvent;
 import vn.xuanthai.clinic.booking.utils.NotificationService;
 
-// NotificationConsumer.java
 @Component // Hoặc @Service
 @RequiredArgsConstructor
 public class NotificationConsumer {
@@ -32,12 +31,14 @@ public class NotificationConsumer {
         );
     }
 
-    @KafkaListener(topics = "notification-topic", groupId = "notification-group")
+    @KafkaListener(topics = "appointment-cancelled-topic", groupId = "notification-group")
     public void listenCancelEvent(AppointmentCancelledEvent event) {
+        //log.info("Nhận sự kiện hủy lịch cho: {}", event.getPatientName());
         try {
             emailService.sendCancellationEmail(event);
         } catch (MessagingException e) {
-
+            //log.error("Gửi mail thất bại: ", e);
+            // Có thể thêm logic retry (gửi lại) nếu cần
         }
     }
 }

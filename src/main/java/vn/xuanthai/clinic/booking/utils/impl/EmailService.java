@@ -82,30 +82,42 @@ public class EmailService implements IEmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
         helper.setTo(event.getRecipientEmail());
-        helper.setSubject("Thông báo Hủy Lịch Hẹn - Phòng khám Xuân Thái");
+        // Tiêu đề email
+        helper.setSubject("Thông báo quan trọng về Lịch Hẹn - Phòng khám Xuân Thái");
 
-        // Đoạn HTML bạn cung cấp
+        // Lấy nội dung thông báo từ Event
+        String messageContent = event.getReason();
+        
+
         String htmlContent = String.format("""
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e74c3c;">
-                <h2 style="color: #c0392b;">Thông báo Hủy Lịch Hẹn</h2>
-                <p>Xin chào <strong>%s</strong>,</p>
-                <p>Lịch hẹn khám của bạn với Bác sĩ <strong>%s</strong> đã được hủy thành công.</p>
-                <ul>
-                    <li><strong>Ngày cũ:</strong> %s</li>
-                    <li><strong>Giờ cũ:</strong> %s</li>
-                </ul>
-                <p>Nếu đây là nhầm lẫn, vui lòng đặt lại lịch mới trên hệ thống.</p>
-                <br>
-                <p>Trân trọng,<br>Đội ngũ phòng khám.</p>
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e74c3c; border-radius: 8px;">
+            <h2 style="color: #c0392b; text-align: center;">CẬP NHẬT TRẠNG THÁI LỊCH HẸN</h2>
+            <p>Xin chào <strong>%s</strong>,</p>
+            
+            <p>Chúng tôi gửi email này để thông báo về lịch hẹn với Bác sĩ <strong>%s</strong>:</p>
+            
+            <div style="background-color: #fcebeb; padding: 15px; margin: 20px 0; border-left: 5px solid #c0392b;">
+                <strong>TRẠNG THÁI: %s</strong>
             </div>
-            """,
+
+            <ul>
+                <li><strong>Ngày:</strong> %s</li>
+                <li><strong>Giờ:</strong> %s</li>
+            </ul>
+
+            <p>Nếu có bất kỳ thắc mắc nào về việc hoàn tiền, vui lòng liên hệ hotline: 1900 xxxx.</p>
+            <br>
+            <p>Trân trọng,<br>Đội ngũ phòng khám Xuân Thái.</p>
+        </div>
+        """,
                 event.getPatientName(),
                 event.getDoctorName(),
+                messageContent, // <-- Điền nội dung thông báo vào đây (Quan trọng)
                 event.getAppointmentDate(),
                 event.getTimeSlot()
         );
 
-        helper.setText(htmlContent, true); // true = gửi dưới dạng HTML
+        helper.setText(htmlContent, true);
         javaMailSender.send(message);
     }
 }

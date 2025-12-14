@@ -47,10 +47,10 @@ public class ScheduleController {
     // API lấy ngày bác sĩ có lịch làm việc (hiển thị dấu chấm vào ngày đó để tối ưu người dùng)
     @GetMapping("/doctor/schedules/working-days")
     @PreAuthorize("hasAuthority('DOCTOR_MANAGE_SCHEDULE')")
-    public ResponseEntity<List<String>> getWorkingDays(
-            @RequestParam int year,
-            @RequestParam int month) {
-        return ResponseEntity.ok(scheduleService.getWorkingDays(year, month));
+    public ResponseEntity<?> getWorkingDays(@RequestParam int year,
+                                            @RequestParam int month,
+                                            @RequestParam(required = false) Long doctorId) {
+        return ResponseEntity.ok(scheduleService.getWorkingDays(year, month, doctorId));
     }
 
 

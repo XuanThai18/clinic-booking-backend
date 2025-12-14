@@ -146,18 +146,31 @@ public class ScheduleServiceImpl implements IScheduleService {
     }
 
     @Override
-    public List<String> getWorkingDays(int year, int month) {
-        User currentUser = userContextService.getCurrentUser();
-        Doctor doctor = doctorRepository.findByUserId(currentUser.getId()).orElseThrow();
+    public List<String> getWorkingDays(int year, int month, Long doctorId) {
+        Long targetDoctorId;
 
-        // 1. Tính ngày đầu tháng và cuối tháng
+        // LOGIC THÔNG MINH:
+        if (doctorId != null) {
+            // 1. Nếu Frontend gửi doctorId (Trường hợp Admin xem lịch bác sĩ) -> Dùng ID đó
+            targetDoctorId = doctorId;
+        } else {
+            // 2. Nếu không gửi (Trường hợp Bác sĩ tự xem lịch mình) -> Lấy từ User đang login
+            User currentUser = userContextService.getCurrentUser();
+            Doctor doctor = doctorRepository.findByUserId(currentUser.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải là bác sĩ!"));
+            targetDoctorId = doctor.getId();
+        }
+
+        // --- ĐOẠN DƯỚI GIỮ NGUYÊN ---
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
-        // 2. Gọi Repo lấy danh sách ngày
-        List<LocalDate> dates = scheduleRepository.findDistinctDatesByDoctorIdAndDateBetween(doctor.getId(), startDate, endDate);
+        List<LocalDate> dates = scheduleRepository.findDistinctDatesByDoctorIdAndDateBetween(
+                targetDoctorId, // Dùng ID đã xác định ở trên
+                startDate,
+                endDate
+        );
 
-        // 3. Chuyển sang String "YYYY-MM-DD" để Frontend dễ so sánh
         return dates.stream()
                 .map(LocalDate::toString)
                 .collect(Collectors.toList());

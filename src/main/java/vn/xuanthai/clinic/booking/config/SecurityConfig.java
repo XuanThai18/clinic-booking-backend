@@ -52,7 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(
                         "/api/auth/**",
                                 "/other-public-api/**",
-                                "/api/public/**") // Các API public
+                                "/api/public/**",
+                                "/api/payment/**") // Các API public
                         .permitAll()
                         .anyRequest() // Mọi request khác
                         .authenticated() // Đều cần phải xác thực

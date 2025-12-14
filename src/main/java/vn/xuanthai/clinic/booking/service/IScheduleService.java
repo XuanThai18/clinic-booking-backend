@@ -24,5 +24,5 @@ public interface IScheduleService {
      */
     List<ScheduleResponse> getAvailableSchedulesByDoctorAndDate(Long doctorId, LocalDate date);
 
-    List<String> getWorkingDays(int year, int month);
+    List<String> getWorkingDays(int year, int month, Long doctorId);
 }

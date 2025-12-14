@@ -32,4 +32,6 @@ public interface IAppointmentService {
     AppointmentResponse cancelAppointment(Long appointmentId, Authentication authentication);
 
     AppointmentResponse bookAppointment(BookingRequest request);
+
+    AppointmentResponse processRefund(Long appointmentId);
 }

@@ -15,6 +15,7 @@ import vn.xuanthai.clinic.booking.enums.AppointmentStatus;
 import vn.xuanthai.clinic.booking.service.IAppointmentService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -64,8 +65,24 @@ public class AppointmentController {
     // API Đặt lịch (Dành cho Bệnh nhân)
     @PostMapping("/appointments/book")
     @PreAuthorize("hasRole('PATIENT')") // Chỉ bệnh nhân mới được đặt
-    public ResponseEntity<AppointmentResponse> bookAppointment(@RequestBody BookingRequest request) {
-        return ResponseEntity.ok(appointmentService.bookAppointment(request));
+    public ResponseEntity<?> bookAppointment(@RequestBody BookingRequest request) {
+        try {
+            // Gọi sang Service
+            AppointmentResponse response = appointmentService.bookAppointment(request);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // Dòng này sẽ in chi tiết lỗi ra màn hình
+            e.printStackTrace();
+
+            // Trả về lỗi rõ ràng cho Frontend (để nó hiện lên Alert)
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", 500,
+                    "message", "Lỗi Server: " + e.getMessage(),
+                    "error", e.getClass().getSimpleName()
+            ));
+        }
     }
 
     // API Hủy lịch (Dành cho Bệnh nhân tự hủy lịch của mình)
@@ -93,5 +110,12 @@ public class AppointmentController {
 
         appointmentService.updateStatus(id, status);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/admin/refund/{id}")
+    @PreAuthorize("hasRole('ADMIN')") // Chỉ Admin được gọi
+    public ResponseEntity<?> approveRefund(@PathVariable Long id) {
+        AppointmentResponse response = appointmentService.processRefund(id);
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,6 +1,7 @@
 package vn.xuanthai.clinic.booking.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AppointmentServiceImpl implements IAppointmentService {
 
     private final AppointmentRepository appointmentRepository;
@@ -41,9 +43,6 @@ public class AppointmentServiceImpl implements IAppointmentService {
     private final UserContextService userContextService;
     private final DoctorRepository doctorRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-
-    // Tên topic trong Kafka
-    private final String NOTIFICATION_TOPIC = "notification-topic";
 
     @Override
     @Transactional // Rất quan trọng! Đảm bảo CẢ HAI thao tác cùng thành công
@@ -182,56 +181,134 @@ public class AppointmentServiceImpl implements IAppointmentService {
     @Override
     @Transactional
     public AppointmentResponse cancelAppointment(Long appointmentId, Authentication authentication) {
-        // 1. Tìm lịch hẹn
+        // 1. TÌM & VALIDATE CƠ BẢN
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn: " + appointmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn với ID: " + appointmentId));
 
-        // 2. Lấy User hiện tại (Dùng UserContextService cho gọn)
+        // Lấy thông tin User hiện tại và Schedule
         User currentUser = userContextService.getCurrentUser();
+        Schedule schedule = appointment.getSchedule();
 
-        // 3. KIỂM TRA QUYỀN
+        // 2. CHECK QUYỀN (AUTHORIZATION)
         // Quyền 1: Là chủ nhân (Bệnh nhân đặt lịch này)
         boolean isOwner = appointment.getPatient().getId().equals(currentUser.getId());
 
-        // Quyền 2: Là Admin hoặc Super Admin
-        // (Kiểm tra Role trực tiếp cho đơn giản, đỡ phải config thêm Authority trong DB)
+        // Quyền 2: Là Admin hoặc Super Admin (Duyệt qua danh sách Role)
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") ||
                         a.getAuthority().equals("ROLE_SUPER_ADMIN"));
 
-        // Nếu không phải Chủ và cũng không phải Admin -> Cút
+        // Nếu không phải Chủ và cũng không phải Admin -> Chặn
         if (!isOwner && !isAdmin) {
             throw new AccessDeniedException("Bạn không có quyền hủy lịch hẹn này.");
         }
 
-        // 4. Gọi hàm xử lý hủy (Tái sử dụng logic)
-        processCancellation(appointment);
+        // Check trạng thái hiện tại: Đã hủy hoặc đã xong thì không được hủy tiếp
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED ||
+                appointment.getStatus() == AppointmentStatus.COMPLETED) {
+            throw new BadRequestException("Lịch hẹn này đã kết thúc hoặc đã bị hủy trước đó!");
+        }
 
-        // 5. GỬI SỰ KIỆN KAFKA ĐỂ BẮN MAIL
-        // Lấy đối tượng Schedule ra trước cho gọn code
-        Schedule schedule = appointment.getSchedule();
+        // 3. CHECK RULE THỜI GIAN (QUY TẮC 2 TIẾNG)
+        // Kết hợp ngày (Date) và giờ (TimeSlot string) thành LocalDateTime
+        LocalDateTime scheduleTime = LocalDateTime.of(schedule.getDate(), LocalTime.parse(schedule.getTimeSlot()));
 
-        AppointmentCancelledEvent event = new AppointmentCancelledEvent(
-                appointment.getPatient().getEmail(),
-                appointment.getPatient().getFullName(),
+        // Logic: Nếu KHÔNG PHẢI LÀ ADMIN thì mới check thời gian
+        // (Admin có quyền hủy bất chấp thời gian, kể cả sát giờ)
+        if (!isAdmin) {
+            // Lấy giờ hiện tại cộng thêm 2 tiếng
+            LocalDateTime twoHoursLater = LocalDateTime.now().plusHours(2);
 
-                // 1. Lấy Bác sĩ
-                // Giả sử trong Schedule có biến doctor kiểu User
-                schedule.getDoctor().getUser().getFullName(),
+            // Nếu (Hiện tại + 2h) mà nằm SAU giờ khám -> Nghĩa là đang trong vòng 2 tiếng sát giờ
+            if (twoHoursLater.isAfter(scheduleTime)) {
+                throw new BadRequestException("Bạn chỉ có thể hủy lịch trước giờ khám ít nhất 2 tiếng!");
+            }
+        }
 
-                // 2. Lấy Ngày
-                schedule.getDate(),
+        // 4. LOGIC XỬ LÝ TRẠNG THÁI & HOÀN TIỀN
+        AppointmentStatus currentStatus = appointment.getStatus();
+        String kafkaMessage = "";
 
-                // 3. Lấy Giờ
-                schedule.getTimeSlot(),
+        if (currentStatus == AppointmentStatus.CONFIRMED) {
+            // CASE A: Đã trả tiền -> Chuyển sang CHỜ HOÀN TIỀN
+            // Admin sẽ vào xác nhận hoàn tiền sau
+            appointment.setStatus(AppointmentStatus.REFUND_PENDING);
+            kafkaMessage = "Yêu cầu hủy được chấp nhận. Hệ thống đang xử lý hoàn tiền cho bạn.";
 
-                "Người dùng yêu cầu hủy"
-        );
+        } else if (currentStatus == AppointmentStatus.PENDING_PAYMENT) { // Tùy tên Enum bạn đặt
+            // CASE B: Chưa trả tiền -> Hủy luôn
+            appointment.setStatus(AppointmentStatus.CANCELLED);
+            kafkaMessage = "Lịch hẹn đã được hủy thành công.";
 
-        // Gửi event
-        kafkaTemplate.send(NOTIFICATION_TOPIC, event);
+        } else {
+            // Các trạng thái lạ khác (VD: REFUND_PENDING bấm hủy tiếp)
+            throw new BadRequestException("Trạng thái đơn không hợp lệ để hủy.");
+        }
 
-        return mapToResponse(appointment);
+        // 5. NHẢ LỊCH (RELEASE SCHEDULE)
+        // Quan trọng: Phải trả trạng thái khung giờ về AVAILABLE để người khác đặt
+        schedule.setStatus(ScheduleStatus.AVAILABLE);
+        scheduleRepository.save(schedule);
+
+        // Lưu thay đổi của Appointment
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // 6. GỬI KAFKA THÔNG BÁO
+        try {
+            AppointmentCancelledEvent event = new AppointmentCancelledEvent(
+                    appointment.getPatient().getEmail(),
+                    appointment.getPatient().getFullName(),
+                    schedule.getDoctor().getUser().getFullName(),
+                    schedule.getDate(),
+                    schedule.getTimeSlot(),
+                    kafkaMessage // Nội dung thông báo tùy theo việc có hoàn tiền hay không
+            );
+            kafkaTemplate.send("appointment-cancelled-topic", event);
+
+            log.info("Đã gửi Kafka hủy lịch cho Appointment ID: {}", appointmentId);
+        } catch (Exception e) {
+            // Chỉ log lỗi, không throw exception để tránh rollback DB (vì đã hủy thành công rồi)
+            log.error("Lỗi gửi Kafka hủy lịch: ", e);
+        }
+
+        return mapToResponse(savedAppointment);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentResponse processRefund(Long appointmentId) {
+        // 1. Tìm lịch hẹn
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn!"));
+
+        // 2. Chỉ xử lý đơn đang treo ở trạng thái REFUND_PENDING
+        if (appointment.getStatus() != AppointmentStatus.REFUND_PENDING) {
+            throw new BadRequestException("Chỉ có thể hoàn tiền cho đơn đang ở trạng thái 'Chờ hoàn tiền'!");
+        }
+
+        // 3. Thực hiện Logic hoàn tiền (Giả lập hoặc gọi VNPay Refund)
+        // ... (Logic hoàn tiền ở đây)
+
+        // 4. Cập nhật trạng thái cuối cùng
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // 5. Gửi Kafka báo khách
+        try {
+            AppointmentCancelledEvent event = new AppointmentCancelledEvent(
+                    appointment.getPatient().getEmail(),
+                    appointment.getPatient().getFullName(),
+                    appointment.getSchedule().getDoctor().getUser().getFullName(),
+                    appointment.getSchedule().getDate(),
+                    appointment.getSchedule().getTimeSlot(),
+                    "Thủ tục hoàn tiền đã hoàn tất. Vui lòng kiểm tra tài khoản ngân hàng."
+            );
+            kafkaTemplate.send("appointment-cancelled-topic", event);
+        } catch (Exception e) {
+            log.error("Lỗi gửi Kafka hoàn tiền: ", e);
+        }
+
+        return mapToResponse(savedAppointment);
     }
 
     // --- HÀM TRỢ GIÚP (Private) ---
@@ -324,34 +401,16 @@ public class AppointmentServiceImpl implements IAppointmentService {
         appointment.setPatient(patient);
         appointment.setSchedule(schedule); // Link với khung giờ
         appointment.setReason(request.getReason());
-        appointment.setStatus(AppointmentStatus.PENDING); // Mặc định là Chờ xác nhận
+        // QUAN TRỌNG: Status ban đầu là UNPAID hoặc PENDING_PAYMENT
+        appointment.setStatus(AppointmentStatus.PENDING_PAYMENT);
 
-        // 6. QUAN TRỌNG: Đánh dấu khung giờ là ĐÃ ĐẶT (Để người khác không đặt được nữa)
+        // 6. Đánh dấu khung giờ là ĐÃ BOOK (để giữ chỗ trong lúc chờ thanh toán)
+        // Lưu ý: Nên có cơ chế Cron Job để nhả lại lịch nếu sau 15p không thanh toán
         schedule.setStatus(ScheduleStatus.BOOKED);
         scheduleRepository.save(schedule);
 
         // 7. Lưu lịch hẹn
         Appointment savedAppointment = appointmentRepository.save(appointment);
-
-        // 8. GỬI KAFKA (ĐOẠN MỚI THÊM)
-        try {
-            AppointmentBookedEvent event = new AppointmentBookedEvent(
-                    savedAppointment.getId(),
-                    patient.getEmail(),       // Email để gửi vé
-                    patient.getFullName(),    // Tên để chào
-                    schedule.getDoctor().getUser().getFullName(), // ID bác sĩ để thông báo
-                    schedule.getDate(),
-                    schedule.getTimeSlot()    // Giờ khám
-            );
-            kafkaTemplate.send("appointment-booked-topic", event);
-
-            System.out.println(">>>>>>>>>> [5] Đã bắn Kafka thành công!");
-        } catch (Exception e) {
-            // Nếu lỗi Kafka thì chỉ log ra, KHÔNG throw lỗi để tránh Rollback DB
-            // Vì lịch đã đặt thành công rồi, lỗi gửi mail tính sau.
-            System.err.println(">>>>>>>>>> [LỖI KAFKA] Không gửi được event: " + e.getMessage());
-            e.printStackTrace();
-        }
 
         return mapToResponse(savedAppointment);
     }

@@ -46,6 +46,9 @@ public class Appointment {
     @Column(name = "status", length = 20, nullable = false)
     private AppointmentStatus status;
 
+    @Column(name = "payment_time")
+    private LocalDateTime paymentTime;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
