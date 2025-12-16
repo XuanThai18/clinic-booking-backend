@@ -1,6 +1,7 @@
 package vn.xuanthai.clinic.booking.config;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import javax.crypto.Mac;
@@ -10,12 +11,36 @@ import java.util.Random;
 
 @Configuration
 public class VNPayConfig {
-    // Thông tin cấu hình từ tài liệu
-    public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8080/api/payment/vnpay-return";
-    public static String vnp_TmnCode = "3DHGZQEN";
-    public static String secretKey = "L3U30JT1JFCGF4HQZLUMSLEF1H1BCJAH";
-    public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
+    public static String vnp_PayUrl;
+    public static String vnp_ReturnUrl;
+    public static String vnp_TmnCode;
+    public static String secretKey;
+    public static String vnp_ApiUrl;
+
+    @Value("${vnpay.pay-url}")
+    public void setVnp_PayUrl(String payUrl) {
+        VNPayConfig.vnp_PayUrl = payUrl;
+    }
+
+    @Value("${vnpay.return-url}")
+    public void setVnp_ReturnUrl(String returnUrl) {
+        VNPayConfig.vnp_ReturnUrl = returnUrl;
+    }
+
+    @Value("${vnpay.tmn-code}")
+    public void setVnp_TmnCode(String tmnCode) {
+        VNPayConfig.vnp_TmnCode = tmnCode;
+    }
+
+    @Value("${vnpay.secret-key}")
+    public void setSecretKey(String secretKey) {
+        VNPayConfig.secretKey = secretKey;
+    }
+
+    @Value("${vnpay.api-url}")
+    public void setVnp_ApiUrl(String apiUrl) {
+        VNPayConfig.vnp_ApiUrl = apiUrl;
+    }
 
     // Thuật toán mã hóa HMACSHA512
     public static String hmacSHA512(final String key, final String data) {
