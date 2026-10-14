@@ -19,6 +19,8 @@ public class JwtService {
 
     @Value("${application.security.jwt.secret-key}")
     private String SECRET_KEY;
+    @Value("${application.security.jwt.expiration}")
+    private long jwtExpiration;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -38,7 +40,7 @@ public class JwtService {
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 1 ngày
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration)) // 15 phút
                 .signWith(getSignInKey())
                 .compact();
     }

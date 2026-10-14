@@ -271,7 +271,7 @@ public class AppointmentServiceImpl implements IAppointmentService {
         }
 
         // 5. NHẢ LỊCH (RELEASE SCHEDULE)
-        // Quan trọng: Phải trả trạng thái khung giờ về AVAILABLE để người khác đặt
+        // trả trạng thái khung giờ về AVAILABLE để người khác đặt
         schedule.setStatus(ScheduleStatus.AVAILABLE);
         scheduleRepository.save(schedule);
 
